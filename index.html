@@ -814,6 +814,7 @@ _rows = []
 _buf = io.StringIO()
 _ls = ${lines}
 
+import types as _types
 def _tr(frame, event, arg):
     if frame.f_code.co_filename != '<string>':
         return _tr
@@ -823,6 +824,8 @@ def _tr(frame, event, arg):
         locs = {}
         for k, v in frame.f_locals.items():
             if k.startswith('_'): continue
+            if isinstance(v, _types.ModuleType): continue
+            if callable(v) and not isinstance(v, (int, float, str, bool, list, dict, tuple)): continue
             try:
                 json.dumps(v)
                 locs[k] = v
