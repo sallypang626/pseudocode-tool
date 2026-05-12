@@ -1,0 +1,992 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+
+<head>
+  <meta charset="UTF-8">
+  <title>偽代碼 ↔ Python 教學工具</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0 }
+
+    :root {
+      --bg: #f0f2f5;
+      --sur: #ffffff;
+      --sur2: #f8f9fa;
+      --bdr: #e2e5ea;
+      --bdr2: #cbd0d8;
+      --acc: #7c3aed;
+      --acc2: #6d28d9;
+      --grn: #16a34a;
+      --grn2: #15803d;
+      --amb: #d97706;
+      --txt: #111827;
+      --txt2: #4b5563;
+      --txt3: #9ca3af;
+      --pse: #2563eb;
+      --pyn: #16a34a;
+      --red: #dc2626;
+      --hl: rgba(124,58,237,0.08);
+      --code-bg: #f8f9fa;
+      --code-txt: #1e1e2e;
+      --code-ln: #9ca3af;
+      --mono: 'JetBrains Mono','Fira Code',monospace;
+      --ui: 'Inter','DM Sans',system-ui,sans-serif;
+      --r: 6px;
+      --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
+      --shadow-md: 0 4px 6px rgba(0,0,0,0.06), 0 2px 4px rgba(0,0,0,0.04)
+    }
+
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+
+    body {
+      font-family: var(--ui);
+      background: var(--bg);
+      color: var(--txt);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden
+    }
+
+    /* ── HEADER ── */
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+      height: 52px;
+      background: var(--sur);
+      border-bottom: 1px solid var(--bdr);
+      flex-shrink: 0;
+      box-shadow: var(--shadow)
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--txt)
+    }
+
+    .logo-dot {
+      width: 28px; height: 28px;
+      border-radius: 7px;
+      background: var(--acc);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px
+    }
+
+    .bdg {
+      font-size: 11px;
+      font-weight: 500;
+      padding: 3px 9px;
+      border-radius: 20px;
+      background: #ede9fe;
+      color: var(--acc);
+      border: 1px solid #ddd6fe
+    }
+
+    .bdg-g {
+      background: #dcfce7;
+      color: var(--grn);
+      border-color: #bbf7d0
+    }
+
+    .bdg-a {
+      background: #fef3c7;
+      color: var(--amb);
+      border-color: #fde68a
+    }
+
+    /* ── TABS ── */
+    .tabs {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      padding: 0 20px;
+      height: 44px;
+      background: var(--sur);
+      border-bottom: 1px solid var(--bdr);
+      flex-shrink: 0
+    }
+
+    .tab {
+      font-size: 13px;
+      font-weight: 500;
+      padding: 6px 16px;
+      border-radius: var(--r);
+      cursor: pointer;
+      color: var(--txt2);
+      border: 1px solid transparent;
+      background: none;
+      transition: all .15s;
+      display: flex;
+      align-items: center;
+      gap: 6px
+    }
+
+    .tab:hover {
+      color: var(--txt);
+      background: var(--bg)
+    }
+
+    .tab.active {
+      color: var(--acc);
+      background: #ede9fe;
+      border-color: #ddd6fe;
+      font-weight: 600
+    }
+
+    /* ── LAYOUT ── */
+    .main { flex: 1; display: flex; overflow: hidden }
+    .view { flex: 1; display: none; flex-direction: column; overflow: hidden }
+    .view.on { display: flex }
+
+    /* ── EDITOR ── */
+    .erow {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0;
+      overflow: hidden
+    }
+
+    .epane {
+      display: flex;
+      flex-direction: column;
+      border-right: 1px solid var(--bdr);
+      overflow: hidden;
+      background: var(--sur)
+    }
+
+    .epane:last-child { border-right: none }
+
+    .ph {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 14px;
+      height: 40px;
+      background: var(--sur2);
+      border-bottom: 1px solid var(--bdr);
+      flex-shrink: 0
+    }
+
+    .pl {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: .03em;
+      text-transform: uppercase;
+      color: var(--txt2)
+    }
+
+    .dot { width: 8px; height: 8px; border-radius: 50% }
+
+    .ea { flex: 1; position: relative; overflow: hidden }
+
+    textarea {
+      width: 100%;
+      height: 100%;
+      background: var(--code-bg);
+      color: var(--code-txt);
+      font-family: var(--mono);
+      font-size: 13.5px;
+      line-height: 1.85;
+      padding: 14px 16px;
+      border: none;
+      resize: none;
+      outline: none;
+      tab-size: 4
+    }
+
+    textarea::placeholder { color: #9ca3af }
+
+    .overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(30,30,46,.85);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      color: var(--grn);
+      gap: 10px;
+      backdrop-filter: blur(2px)
+    }
+
+    .spin {
+      width: 16px; height: 16px;
+      border: 2px solid rgba(166,227,161,.3);
+      border-top-color: var(--grn);
+      border-radius: 50%;
+      animation: sp .7s linear infinite
+    }
+
+    @keyframes sp { to { transform: rotate(360deg) } }
+
+    /* ── BOTTOM BAR ── */
+    .bbar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 16px;
+      background: var(--sur);
+      border-top: 1px solid var(--bdr);
+      flex-shrink: 0;
+      box-shadow: 0 -1px 3px rgba(0,0,0,0.04)
+    }
+
+    .btn {
+      font-family: var(--ui);
+      font-size: 13px;
+      font-weight: 500;
+      padding: 7px 16px;
+      border-radius: var(--r);
+      border: 1px solid var(--bdr2);
+      background: var(--sur);
+      color: var(--txt);
+      cursor: pointer;
+      transition: all .15s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+      box-shadow: var(--shadow)
+    }
+
+    .btn:hover { background: var(--sur2); border-color: var(--bdr2) }
+    .btn:disabled { opacity: .4; cursor: not-allowed }
+
+    .btn-g {
+      background: var(--grn);
+      color: #fff;
+      border-color: var(--grn2);
+      font-weight: 600;
+      box-shadow: 0 1px 3px rgba(22,163,74,.3)
+    }
+
+    .btn-g:hover:not(:disabled) {
+      background: var(--grn2);
+      border-color: var(--grn2)
+    }
+
+    .btn-a {
+      background: var(--sur);
+      color: var(--acc);
+      border-color: #ddd6fe
+    }
+
+    .btn-a:hover:not(:disabled) {
+      background: #ede9fe;
+      border-color: var(--acc)
+    }
+
+    .btn-p {
+      background: var(--acc);
+      color: #fff;
+      border-color: var(--acc2);
+      font-weight: 600;
+      box-shadow: 0 1px 3px rgba(124,58,237,.3)
+    }
+
+    .btn-p:hover:not(:disabled) {
+      background: var(--acc2);
+      border-color: var(--acc2)
+    }
+
+    select.esel {
+      font-family: var(--ui);
+      font-size: 13px;
+      background: var(--sur);
+      color: var(--txt2);
+      border: 1px solid var(--bdr2);
+      border-radius: var(--r);
+      padding: 6px 12px;
+      outline: none;
+      cursor: pointer;
+      margin-left: auto;
+      box-shadow: var(--shadow)
+    }
+
+    /* ── CODE DISPLAY (run/trace panels) ── */
+    .cd {
+      flex: 1;
+      overflow: auto;
+      padding: 14px 16px;
+      font-family: var(--mono);
+      font-size: 13px;
+      line-height: 1.9;
+      background: var(--code-bg);
+      color: var(--code-txt)
+    }
+
+    .cl { display: flex; gap: 12px; padding: 1px 6px; border-radius: 3px }
+    .cl.hl { background: rgba(124,58,237,0.2) }
+
+    .ln {
+      color: var(--code-ln);
+      min-width: 24px;
+      text-align: right;
+      user-select: none;
+      font-size: 12px
+    }
+
+    .lc { flex: 1; white-space: pre }
+
+    /* ── RUN VIEW ── */
+    .rgrid {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      overflow: hidden
+    }
+
+    .rpane {
+      display: flex;
+      flex-direction: column;
+      border-right: 1px solid var(--bdr);
+      overflow: hidden
+    }
+
+    .rpane:last-child { border-right: none }
+
+    .olbl {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: var(--txt3);
+      padding: 7px 16px;
+      background: var(--sur2);
+      border-top: 1px solid var(--bdr);
+      flex-shrink: 0
+    }
+
+    .oa {
+      background: var(--code-bg);
+      border-top: 1px solid var(--bdr);
+      padding: 12px 16px;
+      font-family: var(--mono);
+      font-size: 13px;
+      min-height: 72px;
+      max-height: 120px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      flex-shrink: 0;
+      color: var(--grn)
+    }
+
+    /* ── TRACE VIEW ── */
+    .ttop {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 300px 1fr;
+      overflow: hidden
+    }
+
+    .tcc {
+      border-right: 1px solid var(--bdr);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden
+    }
+
+    .tright { display: flex; flex-direction: column; overflow: hidden }
+
+    .twrap { flex: 1; overflow: auto; padding: 16px }
+
+    table {
+      border-collapse: collapse;
+      font-size: 13px;
+      font-family: var(--mono);
+      min-width: 100%
+    }
+
+    thead th {
+      background: var(--sur2);
+      color: var(--txt2);
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      padding: 9px 14px;
+      border: 1px solid var(--bdr);
+      text-align: left;
+      white-space: nowrap;
+      position: sticky;
+      top: 0;
+      z-index: 1
+    }
+
+    tbody td {
+      padding: 7px 14px;
+      border: 1px solid var(--bdr);
+      color: var(--txt);
+      white-space: nowrap;
+      font-family: var(--mono)
+    }
+
+    tbody tr:hover td { background: #ede9fe }
+
+    .chg { color: var(--acc); font-weight: 600 }
+    .sln { color: var(--txt3); font-size: 12px }
+    .smt { color: var(--txt2); font-size: 12px; max-width: 200px; overflow: hidden; text-overflow: ellipsis }
+
+    .mbar {
+      padding: 9px 16px;
+      font-size: 13px;
+      color: var(--acc);
+      background: #ede9fe;
+      border-top: 1px solid #ddd6fe;
+      min-height: 36px;
+      flex-shrink: 0;
+      font-weight: 500
+    }
+
+    .ctrl {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 16px;
+      background: var(--sur);
+      border-top: 1px solid var(--bdr);
+      flex-shrink: 0;
+      box-shadow: 0 -1px 3px rgba(0,0,0,0.04)
+    }
+
+    .si { font-size: 13px; color: var(--txt3); margin-left: auto }
+
+    .syncing {
+      font-size: 11px;
+      color: var(--amb);
+      animation: pulse 1s ease-in-out infinite
+    }
+
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.35} }
+
+    .dot-l { background: var(--amb) !important }
+    .dot-r { background: var(--grn) !important }
+    ::-webkit-scrollbar { width: 5px; height: 5px }
+    ::-webkit-scrollbar-track { background: transparent }
+    ::-webkit-scrollbar-thumb { background: var(--bdr2); border-radius: 10px }
+  </style>
+</head>
+
+<body>
+
+  <header>
+    <div class="logo">
+      <div class="logo-dot">⇄</div>偽代碼 ↔ Python 教學工具
+    </div>
+    <div style="display:flex;gap:7px;align-items:center"><div id="pyst" style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--txt3)"><div id="pydot" class="dot-l" style="width:7px;height:7px;border-radius:50%;background:var(--amb)"></div><span id="pytxt">載入中...</span></div>
+      <span class="bdg">規則轉換（本地）</span>
+      <span class="bdg-g">執行 &amp; Trace（AI）</span>
+      <span class="bdg-a">Python→偽代碼（AI）</span>
+    </div>
+  </header>
+
+  <div class="tabs">
+    <button class="tab active" onclick="sv('editor')">✏️ 編輯器</button>
+    <button class="tab" onclick="doRun()">▶ 執行</button>
+    <button class="tab" onclick="doTrace()">📊 Trace Table</button>
+  </div>
+
+  <div class="main">
+
+    <!-- ── EDITOR ── -->
+    <div id="ve" class="view on">
+      <div class="erow">
+        <div class="epane">
+          <div class="ph">
+            <div class="pl">
+              <div class="dot" style="background:var(--pse)"></div><span style="color:var(--pse);font-weight:600">偽代碼</span>
+            </div>
+            <span style="font-size:11px;color:var(--txt3);font-style:italic">輸入偽代碼 → 即時轉 Python（本地規則）</span>
+          </div>
+          <div class="ea">
+            <textarea id="ped" spellcheck="false" placeholder="在此輸入偽代碼...
+
+例如：
+total ← 0
+i ← 1
+當 i <= 5 執行
+    total ← total + i
+    i ← i + 1
+輸出 total"></textarea>
+          </div>
+        </div>
+        <div class="epane">
+          <div class="ph">
+            <div class="pl">
+              <div class="dot" style="background:var(--pyn)"></div><span style="color:var(--pyn);font-weight:600">Python</span>
+            </div>
+            <span style="font-size:11px;color:var(--txt3);font-style:italic">自動從偽代碼生成</span>
+          </div>
+          <div class="ea">
+            <textarea id="pyed" spellcheck="false" placeholder="在此輸入 Python...
+
+例如：
+total = 0
+i = 1
+while i <= 5:
+    total += i
+    i += 1
+print(total)"></textarea>
+            <div class="overlay" id="aiov">
+              <div class="spin"></div>AI 正在轉換偽代碼...
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="bbar">
+        <button class="btn btn-g" onclick="doRun()">▶ 執行</button>
+        <button class="btn btn-a" onclick="doTrace()">📊 Trace Table</button>
+        <button class="btn" onclick="clearAll()">清除</button>
+        <select class="esel" onchange="loadEx(this.value)">
+          <option value="">— 載入範例 —</option>
+          <option value="sum">加總 1 到 5</option>
+          <option value="max">找最大值</option>
+          <option value="even">計算偶數個數</option>
+          <option value="fact">階乘</option>
+          <option value="grade">成績判斷</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- ── RUN ── -->
+    <div id="vr" class="view">
+      <div class="rgrid">
+        <div class="rpane">
+          <div class="ph">
+            <div class="pl">
+              <div class="dot" style="background:var(--pse)"></div><span style="color:var(--pse);font-weight:600">偽代碼</span>
+            </div>
+          </div>
+          <div class="cd" id="rp"></div>
+        </div>
+        <div class="rpane">
+          <div class="ph">
+            <div class="pl">
+              <div class="dot" style="background:var(--pyn)"></div><span style="color:var(--pyn);font-weight:600">Python</span>
+            </div>
+          </div>
+          <div class="cd" id="rpy"></div>
+          <div class="olbl">輸出 Output</div>
+          <div class="oa" id="rout" style="color:var(--txt2)">等待執行...</div>
+        </div>
+      </div>
+      <div class="ctrl">
+        <button class="btn" onclick="sv('editor')">← 返回編輯</button>
+        <button class="btn btn-a" onclick="doTrace()">📊 Trace Table</button>
+        <span class="si" id="rst"></span>
+      </div>
+    </div>
+
+    <!-- ── TRACE ── -->
+    <div id="vt" class="view">
+      <div class="ttop">
+        <div class="tcc">
+          <div class="ph">
+            <div class="pl">
+              <div class="dot" style="background:var(--pyn)"></div><span style="color:var(--pyn);font-weight:600">Python</span>
+            </div>
+          </div>
+          <div class="cd" id="tcode"></div>
+        </div>
+        <div class="tright">
+          <div class="ph" style="justify-content:space-between">
+            <div class="pl"><span>📊</span><span>Trace Table</span></div>
+            <span id="tld" class="syncing" style="display:none">⚡ AI 生成中...</span>
+          </div>
+          <div class="twrap" id="twrap">
+            <div style="color:var(--txt3);font-size:13px;padding:16px 0">按「Trace Table」開始...</div>
+          </div>
+          <div class="mbar" id="tmsg"></div>
+        </div>
+      </div>
+      <div class="ctrl">
+        <button class="btn" onclick="sv('editor')">← 返回編輯</button>
+        <button class="btn btn-g" onclick="doRun()">▶ 執行</button>
+        <button class="btn btn-p" onclick="doTrace()">🔄 重新生成</button>
+        <span class="si" id="tinfo"></span>
+      </div>
+    </div>
+
+  </div><!-- .main -->
+
+  <script src="https://cdn.jsdelivr.net/pyodide/v0.27.0/full/pyodide.js"></script>
+<script>
+// ═══════════════════════════════
+//  EXAMPLES
+// ═══════════════════════════════
+const EX = {
+  sum: {
+    p: `total ← 0
+i ← 1
+當 i <= 5 執行
+    total ← total + i
+    i ← i + 1
+輸出 total`,
+    py: `total = 0
+i = 1
+while i <= 5:
+    total += i
+    i += 1
+print(total)`
+  },
+  max: {
+    p: `nums ← [3, 7, 2, 9, 5]
+max_val ← nums[0]
+i ← 1
+當 i < 5 執行
+    如果 nums[i] > max_val 則
+        max_val ← nums[i]
+    結束如果
+    i ← i + 1
+輸出 max_val`,
+    py: `nums = [3, 7, 2, 9, 5]
+max_val = nums[0]
+i = 1
+while i < 5:
+    if nums[i] > max_val:
+        max_val = nums[i]
+    i += 1
+print(max_val)`
+  },
+  even: {
+    p: `nums ← [1, 2, 4, 7, 6]
+count ← 0
+i ← 0
+當 i < 5 執行
+    如果 nums[i] MOD 2 = 0 則
+        count ← count + 1
+    結束如果
+    i ← i + 1
+輸出 count`,
+    py: `nums = [1, 2, 4, 7, 6]
+count = 0
+i = 0
+while i < 5:
+    if nums[i] % 2 == 0:
+        count += 1
+    i += 1
+print(count)`
+  },
+  fact: {
+    p: `n ← 5
+result ← 1
+i ← 1
+當 i <= n 執行
+    result ← result × i
+    i ← i + 1
+輸出 result`,
+    py: `n = 5
+result = 1
+i = 1
+while i <= n:
+    result *= i
+    i += 1
+print(result)`
+  },
+  grade: {
+    p: `score ← 75
+如果 score >= 90 則
+    輸出 "A"
+否則如果 score >= 80 則
+    輸出 "B"
+否則如果 score >= 70 則
+    輸出 "C"
+否則
+    輸出 "F"
+結束如果`,
+    py: `score = 75
+if score >= 90:
+    print("A")
+elif score >= 80:
+    print("B")
+elif score >= 70:
+    print("C")
+else:
+    print("F")`
+  }
+};
+
+// ═══════════════════════════════
+//  PYODIDE
+// ═══════════════════════════════
+let pyodide = null;
+let pyReady = false;
+
+async function initPyodide() {
+  updatePyStatus('載入 Python 環境...', false);
+  try {
+    pyodide = await loadPyodide();
+    pyReady = true;
+    updatePyStatus('Python 就緒 ✓', true);
+  } catch(e) {
+    updatePyStatus('Python 載入失敗', false);
+  }
+}
+
+function updatePyStatus(msg, ready) {
+  const dot = document.getElementById('pydot');
+  const txt = document.getElementById('pytxt');
+  if (dot) dot.className = ready ? 'dot-r' : 'dot-l';
+  if (txt) txt.textContent = msg;
+}
+
+initPyodide();
+
+// ═══════════════════════════════
+//  RULE-BASED: PSEUDO → PYTHON
+// ═══════════════════════════════
+function p2py(pseudo) {
+  const out = [];
+  for (const raw of pseudo.split('\n')) {
+    const indent = raw.match(/^(\s*)/)[1];
+    let L = raw.trimStart();
+    L = L.replace(/^輸出\s+(.+)$/, (_, v) => `print(${v})`);
+    L = L.replace(/^(\w+)\s*(?:←|<-)\s*輸入\(\)$/, (_, v) => `${v} = input()`);
+    L = L.replace(/^輸入\s+(\w+)$/, (_, v) => `${v} = input()`);
+    L = L.replace(/^當\s+(.+?)\s+執行$/, (_, c) => `while ${fc(c)}:`);
+    L = L.replace(/^如果\s+(.+?)\s+則$/, (_, c) => `if ${fc(c)}:`);
+    L = L.replace(/^否則如果\s+(.+?)\s+則$/, (_, c) => `elif ${fc(c)}:`);
+    L = L.replace(/^否則$/, 'else:');
+    L = L.replace(/^結束如果$/, '');
+    L = L.replace(/^結束當$/, '');
+    L = L.replace(/^重複\s+(.+?)\s+次$/, (_, n) => `for _i in range(${n}):`);
+    L = L.replace(/^([\w][\w\[\].]*)\s*(?:←|<-)\s*(.+)$/, (_, v, e) => `${v} = ${fe(e)}`);
+    if (L.trim() === '') { out.push(''); continue; }
+    out.push(indent + L);
+  }
+  return out.join('\n').replace(/\n{3,}/g, '\n\n').trimEnd();
+}
+
+function fc(c) {
+  return c.replace(/\bMOD\b/g, '%').replace(/\bAND\b/gi, 'and')
+          .replace(/\bOR\b/gi, 'or').replace(/\bNOT\b/gi, 'not')
+          .replace(/(?<![<>!=])=(?!=)/g, '==');
+}
+
+function fe(e) {
+  return e.replace(/\bMOD\b/g, '%').replace(/×/g, '*').replace(/÷/g, '/')
+          .replace(/\bDIV\b/gi, '//').replace(/\bAND\b/gi, 'and')
+          .replace(/\bOR\b/gi, 'or').replace(/\bNOT\b/gi, 'not');
+}
+
+// ═══════════════════════════════
+//  PYODIDE: RUN PYTHON
+// ═══════════════════════════════
+async function runPython(code) {
+  if (!pyReady) return { out: 'Python 環境仍在載入，請稍候...', err: true };
+  try {
+    await pyodide.runPythonAsync(`
+import sys, io
+_buf = io.StringIO()
+sys.stdout = _buf
+`);
+    await pyodide.runPythonAsync(code);
+    const out = await pyodide.runPythonAsync(`
+sys.stdout = sys.__stdout__
+_buf.getvalue()
+`);
+    return { out: out || '（無輸出）', err: false };
+  } catch(e) {
+    try { await pyodide.runPythonAsync(`sys.stdout = sys.__stdout__`); } catch(_) {}
+    return { out: String(e), err: true };
+  }
+}
+
+// ═══════════════════════════════
+//  PYODIDE: TRACE TABLE
+// ═══════════════════════════════
+async function tracePython(code) {
+  if (!pyReady) return null;
+  const src = JSON.stringify(code);
+  const lines = JSON.stringify(code.split('\n'));
+  const traceScript = `
+import sys, io, json, copy
+_rows = []
+_buf = io.StringIO()
+_ls = ${lines}
+
+def _tr(frame, event, arg):
+    if frame.f_code.co_filename != '<string>':
+        return _tr
+    ln = frame.f_lineno
+    if event == 'line':
+        stmt = _ls[ln-1].strip() if 0 < ln <= len(_ls) else ''
+        locs = {}
+        for k, v in frame.f_locals.items():
+            if k.startswith('_'): continue
+            try:
+                json.dumps(v)
+                locs[k] = v
+            except:
+                locs[k] = str(v)
+        _rows.append({'line': ln, 'stmt': stmt, 'vars': copy.deepcopy(locs)})
+    return _tr
+
+sys.stdout = _buf
+sys.settrace(_tr)
+try:
+    exec(compile(${src}, '<string>', 'exec'))
+except Exception as _e:
+    _rows.append({'line': 0, 'stmt': 'Error: ' + str(_e), 'vars': {}, 'error': True})
+finally:
+    sys.settrace(None)
+    sys.stdout = sys.__stdout__
+
+json.dumps({'rows': _rows, 'output': _buf.getvalue()})
+`;
+  try {
+    const result = await pyodide.runPythonAsync(traceScript);
+    return JSON.parse(result);
+  } catch(e) {
+    return null;
+  }
+}
+
+// ═══════════════════════════════
+//  UI HELPERS
+// ═══════════════════════════════
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function renderCode(id, code) {
+  document.getElementById(id).innerHTML = code.split('\n').map((l, i) =>
+    `<div class="cl"><span class="ln">${i+1}</span><span class="lc">${esc(l) || ' '}</span></div>`
+  ).join('');
+}
+
+function sv(v) {
+  document.querySelectorAll('.view').forEach(el => el.classList.remove('on'));
+  document.getElementById('v' + v[0]).classList.add('on');
+  document.querySelectorAll('.tab').forEach((t, i) =>
+    t.classList.toggle('active', ['editor','run','trace'][i] === v));
+}
+
+function getPy() {
+  return document.getElementById('pyed').value.trim() ||
+         p2py(document.getElementById('ped').value);
+}
+
+function getPseudo() { return document.getElementById('ped').value; }
+
+function loadEx(val) {
+  if (!val) return;
+  const e = EX[val];
+  document.getElementById('ped').value = e.p;
+  document.getElementById('pyed').value = e.py;
+  document.querySelector('.esel').value = '';
+}
+
+function clearAll() {
+  document.getElementById('ped').value = '';
+  document.getElementById('pyed').value = '';
+}
+
+// ═══════════════════════════════
+//  LISTENERS: pseudo → python (local rules)
+// ═══════════════════════════════
+let ptmr = null;
+document.getElementById('ped').addEventListener('input', () => {
+  clearTimeout(ptmr);
+  ptmr = setTimeout(() => {
+    document.getElementById('pyed').value = p2py(document.getElementById('ped').value);
+  }, 350);
+});
+
+// ═══════════════════════════════
+//  RUN
+// ═══════════════════════════════
+async function doRun() {
+  const pyCode = getPy();
+  if (!pyCode.trim()) return alert('請先輸入代碼');
+  renderCode('rp', getPseudo());
+  renderCode('rpy', pyCode);
+  const outEl = document.getElementById('rout');
+  outEl.textContent = '執行中...';
+  outEl.style.color = 'var(--txt2)';
+  sv('run');
+  const { out, err } = await runPython(pyCode);
+  outEl.textContent = out;
+  outEl.style.color = err ? 'var(--red)' : 'var(--grn)';
+  document.getElementById('rst').textContent = err ? '⚠ 發生錯誤' : '執行完畢 ✓';
+}
+
+// ═══════════════════════════════
+//  TRACE
+// ═══════════════════════════════
+async function doTrace() {
+  const pyCode = getPy();
+  if (!pyCode.trim()) return alert('請先輸入代碼');
+  renderCode('tcode', pyCode);
+  document.getElementById('tld').style.display = 'inline';
+  document.getElementById('twrap').innerHTML = '<div style="color:var(--txt3);font-size:13px;padding:16px 0">追蹤執行中...</div>';
+  document.getElementById('tmsg').textContent = '';
+  sv('trace');
+  const data = await tracePython(pyCode);
+  document.getElementById('tld').style.display = 'none';
+  if (!data) {
+    document.getElementById('twrap').innerHTML = '<div style="color:var(--red);font-size:13px;">追蹤失敗，請檢查代碼。</div>';
+    return;
+  }
+  renderTraceTable(data);
+}
+
+function renderTraceTable(data) {
+  const { rows, output } = data;
+  const vars = [];
+  for (const r of rows) {
+    for (const k of Object.keys(r.vars || {})) {
+      if (!vars.includes(k)) vars.push(k);
+    }
+  }
+
+  let html = '<table><thead><tr><th>行</th><th>語句</th>';
+  for (const v of vars) html += `<th>${esc(v)}</th>`;
+  html += '</tr></thead><tbody>';
+
+  let prev = {};
+  for (const row of rows) {
+    if (row.error) {
+      html += `<tr><td colspan="${vars.length + 2}" style="color:var(--red)">${esc(row.stmt)}</td></tr>`;
+      continue;
+    }
+    html += '<tr>';
+    html += `<td class="sln">${row.line}</td>`;
+    const stmt = String(row.stmt || '');
+    html += `<td class="smt" title="${esc(stmt)}">${esc(stmt.length > 30 ? stmt.slice(0,29)+'…' : stmt)}</td>`;
+    for (const v of vars) {
+      const cur = row.vars[v];
+      const cs = cur !== undefined ? JSON.stringify(cur) : '—';
+      const ps = prev[v] !== undefined ? JSON.stringify(prev[v]) : '—';
+      const chg = cs !== '—' && cs !== ps;
+      html += `<td class="${chg ? 'chg' : ''}">${esc(cs)}</td>`;
+    }
+    html += '</tr>';
+    prev = { ...prev, ...row.vars };
+  }
+
+  if (output && output.trim()) {
+    html += `<tr><td colspan="${vars.length + 2}" style="color:var(--grn);padding:9px 14px;border-top:2px solid var(--bdr2);font-weight:600">輸出：${esc(output.trim())}</td></tr>`;
+  }
+  html += '</tbody></table>';
+
+  document.getElementById('twrap').innerHTML = html;
+  document.getElementById('tmsg').textContent = `共 ${rows.length} 個執行步驟`;
+  document.getElementById('tinfo').textContent = `${rows.length} 步`;
+}
+
+// ── INIT ──
+loadEx('sum');
+</script>
+</body>
+
+</html>
