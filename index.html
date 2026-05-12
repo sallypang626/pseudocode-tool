@@ -814,40 +814,40 @@ import sys, io, json, copy, types as _types
 _rows = []
 _buf = io.StringIO()
 _ls = ${lines}
-_pending = [None]  # pending row waiting for next line to record after-state
+_prev_vars = {}   # vars snapshot BEFORE current line runs
 
-def _clean_locals(locs):
-    result = {}
+def _clean(locs):
+    r = {}
     for k, v in locs.items():
         if k.startswith('_'): continue
         if isinstance(v, _types.ModuleType): continue
         if isinstance(v, type): continue
         try:
             json.dumps(v)
-            result[k] = v
+            r[k] = v
         except:
-            result[k] = str(v)
-    return result
+            r[k] = str(v)
+    return r
 
 def _tr(frame, event, arg):
+    global _prev_vars
     if frame.f_code.co_filename != '<string>':
         return _tr
     ln = frame.f_lineno
+
     if event == 'line':
-        # Save current locals as the result of the PREVIOUS line
-        cur = _clean_locals(frame.f_locals)
-        if _pending[0] is not None:
-            _pending[0]['vars'] = copy.deepcopy(cur)
-            _rows.append(_pending[0])
         stmt = _ls[ln-1].strip() if 0 < ln <= len(_ls) else ''
-        _pending[0] = {'line': ln, 'stmt': stmt, 'vars': {}}
+        # snapshot BEFORE this line = current locals (result of previous line)
+        after = copy.deepcopy(_clean(frame.f_locals))
+        _rows.append({'line': ln, 'stmt': stmt, 'vars': after})
+        _prev_vars = after
+
     elif event == 'return':
-        # Final line — record its result
-        cur = _clean_locals(frame.f_locals)
-        if _pending[0] is not None:
-            _pending[0]['vars'] = copy.deepcopy(cur)
-            _rows.append(_pending[0])
-            _pending[0] = None
+        # last line just finished — update its vars with final state
+        after = copy.deepcopy(_clean(frame.f_locals))
+        if _rows:
+            _rows[-1]['vars'] = after
+
     return _tr
 
 sys.stdout = _buf
@@ -855,9 +855,6 @@ sys.settrace(_tr)
 try:
     exec(compile(${src}, '<string>', 'exec'))
 except Exception as _e:
-    if _pending[0] is not None:
-        _rows.append(_pending[0])
-        _pending[0] = None
     _rows.append({'line': 0, 'stmt': 'Error: ' + str(_e), 'vars': {}, 'error': True})
 finally:
     sys.settrace(None)
@@ -975,8 +972,17 @@ function renderTraceTable(data) {
   for (const v of vars) html += `<th>${esc(v)}</th>`;
   html += '</tr></thead><tbody>';
 
+  // Build a "first seen" map: which row index each var first appears
+  const firstSeen = {};
+  for (let ri = 0; ri < rows.length; ri++) {
+    for (const v of Object.keys(rows[ri].vars || {})) {
+      if (!(v in firstSeen)) firstSeen[v] = ri;
+    }
+  }
+
   let prev = {};
-  for (const row of rows) {
+  for (let ri = 0; ri < rows.length; ri++) {
+    const row = rows[ri];
     if (row.error) {
       html += `<tr><td colspan="${vars.length + 2}" style="color:var(--red)">${esc(row.stmt)}</td></tr>`;
       continue;
@@ -986,8 +992,9 @@ function renderTraceTable(data) {
     const stmt = String(row.stmt || '');
     html += `<td class="smt" title="${esc(stmt)}">${esc(stmt.length > 30 ? stmt.slice(0,29)+'…' : stmt)}</td>`;
     for (const v of vars) {
+      const notYetDefined = firstSeen[v] === undefined || ri < firstSeen[v];
       const cur = row.vars[v];
-      const cs = cur !== undefined ? JSON.stringify(cur) : '—';
+      const cs = (notYetDefined || cur === undefined) ? '—' : JSON.stringify(cur);
       const ps = prev[v] !== undefined ? JSON.stringify(prev[v]) : '—';
       const chg = cs !== '—' && cs !== ps;
       html += `<td class="${chg ? 'chg' : ''}">${esc(cs)}</td>`;
