@@ -809,29 +809,45 @@ async function tracePython(code) {
   const src = JSON.stringify(code);
   const lines = JSON.stringify(code.split('\n'));
   const traceScript = `
-import sys, io, json, copy
+import sys, io, json, copy, types as _types
+
 _rows = []
 _buf = io.StringIO()
 _ls = ${lines}
+_pending = [None]  # pending row waiting for next line to record after-state
 
-import types as _types
+def _clean_locals(locs):
+    result = {}
+    for k, v in locs.items():
+        if k.startswith('_'): continue
+        if isinstance(v, _types.ModuleType): continue
+        if isinstance(v, type): continue
+        try:
+            json.dumps(v)
+            result[k] = v
+        except:
+            result[k] = str(v)
+    return result
+
 def _tr(frame, event, arg):
     if frame.f_code.co_filename != '<string>':
         return _tr
     ln = frame.f_lineno
     if event == 'line':
+        # Save current locals as the result of the PREVIOUS line
+        cur = _clean_locals(frame.f_locals)
+        if _pending[0] is not None:
+            _pending[0]['vars'] = copy.deepcopy(cur)
+            _rows.append(_pending[0])
         stmt = _ls[ln-1].strip() if 0 < ln <= len(_ls) else ''
-        locs = {}
-        for k, v in frame.f_locals.items():
-            if k.startswith('_'): continue
-            if isinstance(v, _types.ModuleType): continue
-            if callable(v) and not isinstance(v, (int, float, str, bool, list, dict, tuple)): continue
-            try:
-                json.dumps(v)
-                locs[k] = v
-            except:
-                locs[k] = str(v)
-        _rows.append({'line': ln, 'stmt': stmt, 'vars': copy.deepcopy(locs)})
+        _pending[0] = {'line': ln, 'stmt': stmt, 'vars': {}}
+    elif event == 'return':
+        # Final line — record its result
+        cur = _clean_locals(frame.f_locals)
+        if _pending[0] is not None:
+            _pending[0]['vars'] = copy.deepcopy(cur)
+            _rows.append(_pending[0])
+            _pending[0] = None
     return _tr
 
 sys.stdout = _buf
@@ -839,6 +855,9 @@ sys.settrace(_tr)
 try:
     exec(compile(${src}, '<string>', 'exec'))
 except Exception as _e:
+    if _pending[0] is not None:
+        _rows.append(_pending[0])
+        _pending[0] = None
     _rows.append({'line': 0, 'stmt': 'Error: ' + str(_e), 'vars': {}, 'error': True})
 finally:
     sys.settrace(None)
