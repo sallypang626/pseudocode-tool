@@ -1,0 +1,1313 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>先玩後學！ICT 四大迴圈與偽代碼對照平台</title>
+    <!-- 引入 Tailwind CSS 提供現代感 UI -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入 FontAwesome 圖標 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Share+Tech+Mono&display=swap"
+        rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: #f8fafc;
+            /* 淺灰藍背景 */
+        }
+
+        .code-font {
+            font-family: 'Share Tech Mono', monospace;
+        }
+
+        /* 震動動畫，用於爆炸效果 */
+        @keyframes shake {
+
+            0%,
+            100% {
+                transform: translateX(0);
+            }
+
+            10%,
+            30%,
+            50%,
+            70%,
+            90% {
+                transform: translateX(-5px);
+            }
+
+            20%,
+            40%,
+            60%,
+            80% {
+                transform: translateX(5px);
+            }
+        }
+
+        .shake-effect {
+            animation: shake 0.5s ease-in-out;
+        }
+
+        /* 滾動條美化 */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+
+<body class="text-slate-800 min-h-screen flex flex-col justify-between pb-10">
+
+    <!-- 頂部導航與標題 -->
+    <header class="border-b border-slate-200 bg-white py-4 px-6 mb-6 shadow-sm">
+        <div class="max-w-7xl mx-auto flex flex-col lg:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-3">
+                <div class="bg-blue-50 p-2 rounded-lg border border-blue-100">
+                    <i class="fa-solid fa-graduation-cap text-blue-600 text-2xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold text-slate-900 tracking-wide">中四 ICT 課堂體驗：四大迴圈與偽代碼對照</h1>
+                    <p class="text-xs text-slate-500">同步學 Python 程式碼 ＆ 考卷標準偽代碼 (Pseudocode)</p>
+                </div>
+            </div>
+            <!-- 模式切換器（四個按鈕） -->
+            <div class="flex flex-wrap gap-1 bg-slate-100 p-1.5 rounded-xl border border-slate-200">
+                <button id="tab-while" onclick="switchMode('while')"
+                    class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all bg-white text-blue-600 shadow-sm">
+                    <i class="fa-solid fa-infinity mr-1"></i> While Loop
+                </button>
+                <button id="tab-for" onclick="switchMode('for')"
+                    class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all text-slate-500 hover:text-slate-800">
+                    <i class="fa-solid fa-bomb mr-1"></i> For (限次)
+                </button>
+                <button id="tab-dowhile" onclick="switchMode('dowhile')"
+                    class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all text-slate-500 hover:text-slate-800">
+                    <i class="fa-solid fa-rotate-right mr-1"></i> Do-While
+                </button>
+                <button id="tab-repeat" onclick="switchMode('repeat')"
+                    class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all text-slate-500 hover:text-slate-800">
+                    <i class="fa-solid fa-arrows-spin mr-1"></i> Repeat-Until
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主內容區 -->
+    <main class="max-w-7xl w-full mx-auto px-4 flex-grow grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+
+        <!-- 左側：遊戲體驗區 (Play Zone) -->
+        <section id="play-zone"
+            class="lg:col-span-5 bg-white border border-slate-200 rounded-2xl p-6 shadow-md relative overflow-hidden">
+            <!-- 裝飾背景球 -->
+            <div id="glow-bg"
+                class="absolute top-0 right-0 w-32 h-32 bg-blue-50 rounded-full blur-3xl pointer-events-none transition-all">
+            </div>
+
+            <div class="mb-4">
+                <span id="mode-badge"
+                    class="px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-600 border border-blue-100">
+                    While Loop: 前測型迴圈
+                </span>
+                <h2 id="game-title" class="text-2xl font-bold mt-3 text-slate-900">體驗遊戲（秘密數字已設定）</h2>
+                <p id="game-subtitle" class="text-sm text-slate-500 mt-1">在進入大門前先驗收條件！只要沒猜對，就會一遍又一遍重複！</p>
+            </div>
+
+            <!-- 後測型迴圈專用：範例場景切換器 (選單顯示、輸入驗證、遊戲回合) -->
+            <div id="post-test-selector-container"
+                class="hidden mb-4 bg-slate-50 p-1.5 rounded-xl border border-slate-200">
+                <div class="text-[10px] text-slate-400 font-bold uppercase tracking-wider px-2 mb-1">選擇後測型演示場景</div>
+                <div class="flex gap-1 w-full">
+                    <button id="sub-menu" onclick="switchSubExample('menu')"
+                        class="flex-1 py-1 rounded-lg text-xs font-bold transition-all bg-white text-slate-800 shadow-sm">
+                        選單顯示
+                    </button>
+                    <button id="sub-validation" onclick="switchSubExample('validation')"
+                        class="flex-1 py-1 rounded-lg text-xs font-bold transition-all text-slate-500 hover:text-slate-800">
+                        輸入驗證
+                    </button>
+                    <button id="sub-rounds" onclick="switchSubExample('rounds')"
+                        class="flex-1 py-1 rounded-lg text-xs font-bold transition-all text-slate-500 hover:text-slate-800">
+                        遊戲回合
+                    </button>
+                </div>
+            </div>
+
+            <!-- For Loop 專屬：生命值狀態欄 -->
+            <div id="lives-container" class="hidden mb-4 bg-rose-50 border border-rose-100 rounded-xl p-3 text-center">
+                <div class="text-xs text-rose-500 font-bold uppercase tracking-wider mb-1">剩餘生命值 (Hearts)</div>
+                <div id="hearts-display" class="text-2xl tracking-widest">❤️❤️❤️❤️❤️</div>
+            </div>
+
+            <!-- 遊戲核心 UI (根據模式動態更換內部 HTML) -->
+            <div id="game-card"
+                class="bg-slate-50 border border-slate-200 rounded-xl p-5 text-center mb-6 relative transition-all min-h-[220px] flex flex-col justify-center">
+                <!-- 警告框 -->
+                <div id="game-alert"
+                    class="hidden absolute inset-x-4 top-4 bg-rose-500 text-white py-2 px-3 rounded-lg text-sm font-semibold shadow-md transition-all z-10">
+                </div>
+
+                <div id="game-dynamic-content">
+                    <!-- 由 JS 動態注入各個模式的互動 UI -->
+                </div>
+            </div>
+
+            <!-- 即時回饋區 -->
+            <div id="feedback-box"
+                class="bg-slate-50 border border-slate-200 rounded-xl p-4 min-h-[80px] flex flex-col justify-center items-center text-center">
+                <div id="feedback-icon" class="text-slate-400 text-xl mb-1">
+                    <i class="fa-solid fa-circle-question"></i>
+                </div>
+                <p id="feedback-text" class="text-slate-600 font-medium">請進行上方操作開始體驗</p>
+            </div>
+
+            <!-- 歷史紀錄 -->
+            <div class="mt-6">
+                <div class="flex justify-between items-center mb-2">
+                    <h3 class="text-sm font-semibold text-slate-700">互動歷史軌跡</h3>
+                    <button onclick="resetGame()"
+                        class="text-xs text-rose-600 hover:text-rose-700 flex items-center gap-1 font-medium">
+                        <i class="fa-solid fa-rotate-right"></i> 重設體驗
+                    </button>
+                </div>
+                <div id="history-list" class="space-y-2 max-h-[140px] overflow-y-auto pr-1">
+                    <p class="text-xs text-slate-400 text-center py-4">目前沒有任何紀錄</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- 右側：程式解密區 (Code Zone) -->
+        <section id="code-zone"
+            class="lg:col-span-7 bg-white border border-slate-200 rounded-2xl p-6 shadow-md relative">
+            <div id="code-glow"
+                class="absolute top-0 right-0 w-32 h-32 bg-emerald-50 rounded-full blur-3xl pointer-events-none"></div>
+
+            <div
+                class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-100 pb-4 mb-4">
+                <div>
+                    <span id="code-badge"
+                        class="px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-600 border border-emerald-100">
+                        Step 2. 邏輯解密 (While 版)
+                    </span>
+                    <h2 id="code-title" class="text-2xl font-bold mt-2 text-slate-900">極簡代碼解析</h2>
+                </div>
+
+                <!-- 語言切換選單 (Python / Pseudocode) -->
+                <div class="flex bg-slate-100 p-1 rounded-lg border border-slate-200 self-stretch sm:self-auto">
+                    <button id="lang-python" onclick="switchLanguage('python')"
+                        class="flex-1 sm:flex-initial px-4 py-1.5 rounded-md text-xs font-bold transition-all bg-white text-slate-800 shadow-sm">
+                        Python
+                    </button>
+                    <button id="lang-pseudocode" onclick="switchLanguage('pseudocode')"
+                        class="flex-1 sm:flex-initial px-4 py-1.5 rounded-md text-xs font-bold transition-all text-slate-500 hover:text-slate-800">
+                        DSE 偽代碼
+                    </button>
+                </div>
+            </div>
+
+            <p class="text-sm text-slate-500 mb-4">💡 點擊下方任何一行程式碼，右側會立刻顯示它在遊戲中扮演的角色與 ICT 課綱考點！</p>
+
+            <!-- 互動程式碼展示區 -->
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-4">
+
+                <!-- 程式碼本體 -->
+                <div
+                    class="md:col-span-7 bg-slate-50 p-4 rounded-xl border border-slate-200 code-font text-sm leading-relaxed overflow-x-auto">
+                    <div class="text-xs text-slate-400 mb-2 border-b border-slate-200 pb-2 flex justify-between">
+                        <span id="code-filename">guess_game_while.py</span>
+                        <span class="text-blue-600 font-medium"><i class="fa-solid fa-pointer animate-pulse"></i>
+                            點選代碼行</span>
+                    </div>
+
+                    <!-- 程式碼行貨櫃 (由 JS 動態渲染) -->
+                    <div id="code-lines-container" class="space-y-0.5">
+                        <!-- 預設載入 While 程式碼 -->
+                    </div>
+                </div>
+
+                <!-- 說明卡片 (Light Mode 配色) -->
+                <div class="md:col-span-5 flex flex-col justify-between gap-4">
+                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 flex-grow">
+                        <h4 class="text-xs text-slate-400 uppercase tracking-wider mb-2">
+                            <i class="fa-solid fa-circle-info text-blue-500 mr-1"></i> 程式碼對應解說
+                        </h4>
+                        <div id="explanation-container"
+                            class="text-xs sm:text-sm text-slate-600 leading-relaxed min-h-[180px]">
+                            💡 請點擊左側的任何一行程式碼，這裡會展示它在剛才玩遊戲時對應的運作原理與功能！
+                        </div>
+                    </div>
+
+                    <!-- 老師講授心法 -->
+                    <div id="teacher-tip-box" class="bg-amber-50 border border-amber-200 rounded-xl p-4">
+                        <h4 class="text-xs text-amber-700 font-bold mb-1">
+                            <i class="fa-solid fa-chalkboard-user"></i> 老師講授小技巧
+                        </h4>
+                        <p id="teacher-tip-text" class="text-xs text-slate-500 leading-relaxed">
+                            引導學生思考：第 3 行是遊戲的「大門哨兵」，而第 4 行就是「拿取新門票」的地方。如果不給新門票（guess 沒更新），大門哨兵就會被永遠困在裡面。
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- 底部版權 -->
+    <footer class="max-w-7xl mx-auto px-4 mt-8 text-center text-xs text-slate-400">
+        中四 ICT 資訊科技輔助教學 &bull; 迴圈對照平台 &bull; Python v.s. 官方偽代碼
+    </footer>
+
+    <!-- JavaScript 邏輯控制 -->
+    <script>
+        // 固定秘密數字
+        const secretNumber = 63;
+
+        // 核心狀態
+        let currentMode = 'while'; // 'while', 'for', 'dowhile', 'repeat'
+        let currentLanguage = 'python'; // 'python' 或 'pseudocode'
+        let subExample = 'menu'; // 'menu' (選單顯示), 'validation' (輸入驗證), 'rounds' (遊戲回合)
+
+        // 經典猜數字變數
+        let minBoundary = 1;
+        let maxBoundary = 100;
+        let attempts = 0;
+        const maxForAttempts = 5;
+        let gameOver = false;
+
+        // ==========================================
+        // 1. 完整 4 種模式 ＆ 語言的程式碼範本
+        // ==========================================
+        const codeTemplates = {
+            while: {
+                python: [
+                    { line: 1, key: "init_secret", text: "secret = 63", explain: "定義秘密數字為 63。", type: "normal", indent: 0 },
+                    { line: 2, key: "init_guess", text: "guess = 0", explain: "設定變數 guess 初始值為 0。因為 0 不等於 63，這能確保程式一開始能順利進入迴圈。", type: "normal", indent: 0 },
+                    { line: 3, key: "loop_start", text: "while guess != secret:", explain: "【前測型迴圈】在進入迴圈前先檢測。只要【玩家猜的數字不等於 63】，循環體就會重覆執行！", type: "keyword-while", indent: 0 },
+                    { line: 4, key: "input", text: "guess = int(input(\"Please guess the number: \"))", explain: "每次迴圈內部重新輸入。這負責「更新 guess 的值」，不寫它會陷入【無窮迴圈】！", type: "normal", indent: 1 },
+                    { line: 5, key: "check_low", text: "if guess < secret:", explain: "判斷玩家輸入的值是否小於 63。", type: "normal", indent: 1 },
+                    { line: 6, key: "print_low", text: "print(\"太小了\")", explain: "印出「太小了」提示，然後繞回第 3 行重新檢測條件。", type: "normal", indent: 2 },
+                    { line: 7, key: "check_high", text: "elif guess > secret:", explain: "若大於 63。", type: "normal", indent: 1 },
+                    { line: 8, key: "print_high", text: "print(\"太大了\")", explain: "印出「太大了」提示，並繞回第 3 行。", type: "normal", indent: 2 },
+                    { line: 9, key: "success", text: "print(\"恭喜猜中！遊戲結束。\")", explain: "縮排外。只有猜對了（條件 63 != 63 為假）跳出迴圈後才會執行這行祝賀。", type: "normal", indent: 0 }
+                ],
+                pseudocode: [
+                    { line: 1, key: "init_secret", text: "secret ← 63", explain: "使用 DSE 標準箭頭符號「←」進行賦值（Assignment），將 63 存入 secret 變數。", type: "normal", indent: 0 },
+                    { line: 2, key: "init_guess", text: "guess ← 0", explain: "初始化變數 guess 為 0，確保前測條件符合。", type: "normal", indent: 0 },
+                    { line: 3, key: "loop_start", text: "當 guess ≠ secret", explain: "【前測型「當...」迴圈】只要 guess 不等於 secret 條件成立，就持續執行循環體。", type: "keyword-while", indent: 0 },
+                    { line: 4, key: "input", text: "輸入 guess", explain: "在循環內讀取玩家的輸入，更新 guess 的狀態。", type: "normal", indent: 1 },
+                    { line: 5, key: "check_low", text: "如果 guess < secret 則", explain: "條件分支出發：判斷猜的值是否過小。", type: "normal", indent: 1 },
+                    { line: 6, key: "print_low", text: "輸出 \"太小了\"", explain: "向用戶輸出「太小了」提示。", type: "normal", indent: 2 },
+                    { line: 7, key: "check_high", text: "否則如果 guess > secret 則", explain: "若猜得太大。", type: "normal", indent: 1 },
+                    { line: 8, key: "print_high", text: "輸出 \"太大了\"", explain: "向用戶輸出「太大了」提示。", type: "normal", indent: 2 },
+                    { line: 9, key: "success", text: "輸出 \"恭喜猜中！遊戲結束。\"", explain: "當條件不成立（玩家猜對）時，跳過整個迴圈結構，執行最後的成功祝賀輸出。", type: "normal", indent: 0 }
+                ]
+            },
+            for: {
+                python: [
+                    { line: 1, key: "init_secret", text: "secret = 63", explain: "定義秘密數字為 63。", type: "normal", indent: 0 },
+                    { line: 2, key: "loop_start", text: "for attempt in range(1, 6):", explain: "【計數型迴圈】透過 `range(1, 6)` 控制迴圈從 1 數到 5，限制玩家只有 5次生命值！", type: "keyword-for", indent: 0 },
+                    { line: 3, key: "print_attempt", text: "print(f\"第 {attempt} 次嘗試\")", explain: "每一次迴圈開始，提示當前的迭代次數。", type: "normal", indent: 1 },
+                    { line: 4, key: "input", text: "guess = int(input(\"Please guess: \"))", explain: "外迴圈內部：向玩家索取新的猜測數字。", type: "normal", indent: 1 },
+                    { line: 5, key: "check_win", text: "if guess == secret:", explain: "若猜對了秘密數字。", type: "normal", indent: 1 },
+                    { line: 6, key: "print_win", text: "print(\"恭喜猜中！\")", explain: "輸出過關訊息。", type: "normal", indent: 2 },
+                    { line: 7, key: "break_win", text: "break", explain: "【強制跳出】使用 `break` 關鍵字，猜對了就得立刻跳出 For 迴圈，終止計數！", type: "keyword-break", indent: 2 },
+                    { line: 8, key: "check_low", text: "elif guess < secret:", explain: "若猜太小。", type: "normal", indent: 1 },
+                    { line: 9, key: "print_low", text: "print(\"太小了\")", explain: "提示太小，迴圈會自動計數加 1 進入下一次迭代。", type: "normal", indent: 2 },
+                    { line: 10, key: "check_high", text: "elif guess > secret:", explain: "若猜太大。", type: "normal", indent: 1 },
+                    { line: 11, key: "print_high", text: "print(\"太大了\")", explain: "提示太大並進入下一次迭代。", type: "normal", indent: 2 }
+                ],
+                pseudocode: [
+                    { line: 1, key: "init_secret", text: "secret ← 63", explain: "宣告變數 secret 為 63。", type: "normal", indent: 0 },
+                    { line: 2, key: "loop_start", text: "設 attempt 由 1 至 5", explain: "【計數型迴圈】處理變量 attempt 會在每次迭代後自動遞增 1，範圍為 1 至 5。", type: "keyword-for", indent: 0 },
+                    { line: 3, key: "print_attempt", text: "輸出 \"第 \", attempt, \" 次嘗試\"", explain: "在迴圈內輸出當前嘗試次數。", type: "normal", indent: 1 },
+                    { line: 4, key: "input", text: "輸入 guess", explain: "讀取輸入並儲存於 guess 中。", type: "normal", indent: 1 },
+                    { line: 5, key: "check_win", text: "如果 guess = secret 則", explain: "如果玩家猜對了。", type: "normal", indent: 1 },
+                    { line: 6, key: "print_win", text: "輸出 \"恭喜猜中！\"", explain: "輸出祝賀訊息。", type: "normal", indent: 2 },
+                    { line: 7, key: "break_win", text: "退出循環", explain: "【關鍵控制流】對照 Python 中的 `break`，在偽代碼中使用「退出循環」來立即結束計數迴圈。", type: "keyword-break", indent: 2 },
+                    { line: 8, key: "check_low", text: "否則如果 guess < secret 則", explain: "若玩家猜太小。", type: "normal", indent: 1 },
+                    { line: 9, key: "print_low", text: "輸出 \"太小了\"", explain: "給予太小提示。", type: "normal", indent: 2 },
+                    { line: 10, key: "check_high", text: "否則如果 guess > secret 則", explain: "若玩家猜太大。", type: "normal", indent: 1 },
+                    { line: 11, key: "print_high", text: "輸出 \"太大了\"", explain: "給予太大提示。", type: "normal", indent: 2 }
+                ]
+            }
+        };
+
+        // ==========================================
+        // 2. Do-While & Repeat-Until 三大範例代碼數據 (標準無空格化 + 精準 Sequential 行數)
+        // ==========================================
+        const postTestTemplates = {
+            dowhile: {
+                menu: {
+                    python: [
+                        { line: 1, key: "loop_start", text: "while True:", explain: "【Do-While 模擬】使用 while True 起手，建立「先執行主體，底部才判斷」的結構。", type: "keyword-dowhile", indent: 0 },
+                        { line: 2, key: "print_menu", text: "print(\"1.開始遊戲 | 2.說明 | 3.離開\")", explain: "先斬後奏，直接向用戶印出選單。不論如何都會「至少顯示一次選單」！", type: "normal", indent: 1 },
+                        { line: 3, key: "input", text: "choice = int(input(\"請選擇選項 (1-3): \"))", explain: "讓用戶輸入選項值。", type: "normal", indent: 1 },
+                        { line: 4, key: "check_invalid", text: "if choice < 1 or choice > 3:", explain: "【判斷繼續條件】如果用戶輸入不合法，則印出警告並繼續循環。", type: "normal", indent: 1 },
+                        { line: 5, key: "print_error", text: "print(\"選項無效，請重新輸入！\")", explain: "提示無效輸入。", type: "normal", indent: 2 },
+                        { line: 6, key: "loop_end", text: "if not (choice < 1 or choice > 3):  # 繼續條件：輸入不合法", explain: "【Do-While 繼續條件判定】底部檢測。Do-While 是在「條件成立時繼續」。因此在 Python 中，如果「不符合繼續條件 (即輸入合法)」，則跳出迴圈。", type: "keyword-break", indent: 1 },
+                        { line: 7, key: "break_win", text: "break", explain: "若輸入合法，終止迴圈。", type: "normal", indent: 2 },
+                        { line: 8, key: "success", text: "print(\"選單驗證通過，進入主程式！\")", explain: "跳出迴圈後執行的後續代碼。", type: "normal", indent: 0 }
+                    ],
+                    pseudocode: [
+                        { line: 1, key: "loop_start", text: "執行", explain: "【Do-While 後測迴圈起手】對照投影片 13。無條件直接進入迴圈體，至少執行一次選單輸出。", type: "keyword-dowhile", indent: 0 },
+                        { line: 2, key: "print_menu", text: "輸出 \"1.開始遊戲 | 2.說明 | 3.離開\"", explain: "第一步：直接輸出選單內容給用戶。", type: "normal", indent: 1 },
+                        { line: 3, key: "input", text: "輸入 choice", explain: "第二步：讀取用戶輸入。", type: "normal", indent: 1 },
+                        { line: 4, key: "check_invalid", text: "如果 choice < 1 或 choice > 3 則", explain: "第三步：如果輸入不在 1-3 範圍內，印出警告語句。", type: "normal", indent: 1 },
+                        { line: 5, key: "print_error", text: "輸出 \"選項無效，請重新輸入！\"", explain: "輸出錯誤提示。", type: "normal", indent: 2 },
+                        { line: 6, key: "loop_end", text: "當 choice < 1 或 choice > 3", explain: "【後測繼續條件驗收】在迴圈最底部。只要「輸入不合法」條件為「真（True）」，程式就會倒退回第 1 行「執行」重來！", type: "keyword-dowhile", indent: 0 },
+                        { line: 7, key: "success", text: "輸出 \"選單驗證通過，進入主程式！\"", explain: "輸入合法時，底部條件不成立，跳出迴圈執行此行。", type: "normal", indent: 0 }
+                    ]
+                },
+                validation: {
+                    python: [
+                        { line: 1, key: "loop_start", text: "while True:", explain: "【Do-While 模擬】使用 while True 起手，建立先執行後檢測的輸入驗證。", type: "keyword-dowhile", indent: 0 },
+                        { line: 2, key: "input", text: "age = int(input(\"請輸入年齡 (必須大於0): \"))", explain: "一上來直接索取一次輸入，不需要在迴圈外預設 age 的初始值！", type: "normal", indent: 1 },
+                        { line: 3, key: "check_invalid", text: "if age <= 0:", explain: "判斷輸入是否小於等於 0。", type: "normal", indent: 1 },
+                        { line: 4, key: "print_error", text: "print(\"無效年齡，請重試！\")", explain: "輸出警告。", type: "normal", indent: 2 },
+                        { line: 5, key: "loop_end", text: "if not (age <= 0):  # 繼續條件：年齡不合法 (<= 0)", explain: "【Do-While 結束檢查】底部檢測。繼續條件是「年齡不合法 (age <= 0)」。在 Python 裡，如果「不滿足繼續條件 (即輸入年齡合法)」，則 break 跳出迴圈。", type: "keyword-break", indent: 1 },
+                        { line: 6, key: "break_win", text: "break", explain: "跳出驗證迴圈。", type: "normal", indent: 2 },
+                        { line: 7, key: "success", text: "print(\"年齡驗證通過！\")", explain: "驗證成功後的代碼。", type: "normal", indent: 0 }
+                    ],
+                    pseudocode: [
+                        { line: 1, key: "loop_start", text: "執行", explain: "【後測迴圈開始】保證無論如何都要先執行一次年齡輸入詢問。", type: "keyword-dowhile", indent: 0 },
+                        { line: 2, key: "input", text: "輸入 age", explain: "要求用戶輸入年齡值。", type: "normal", indent: 1 },
+                        { line: 3, key: "check_invalid", text: "如果 age <= 0 則", explain: "判斷輸入的合法性。", type: "normal", indent: 1 },
+                        { line: 4, key: "print_error", text: "輸出 \"無效年齡，請重試！\"", explain: "給予錯誤提示。", type: "normal", indent: 2 },
+                        { line: 5, key: "loop_end", text: "當 age <= 0", explain: "【後測繼續條件】底部檢測。如果 age <= 0 成立（為真），則代表輸入不合法，必須返回「執行」重猜一遍！", type: "keyword-dowhile", indent: 0 },
+                        { line: 6, key: "success", text: "輸出 \"年齡驗證通過！\"", explain: "年齡大於 0 時，當型條件為假，順利跳出並輸出。", type: "normal", indent: 0 }
+                    ]
+                },
+                rounds: {
+                    python: [
+                        { line: 1, key: "loop_start", text: "while True:", explain: "【Do-While 模擬】使用 while True 保證玩家「至少玩一局遊戲」。", type: "keyword-dowhile", indent: 0 },
+                        { line: 2, key: "play_game", text: "print(\"--- 遊戲回合開始！砰砰！ ---\")", explain: "遊戲本體執行，玩家在此進行操作，擊碎目標。", type: "normal", indent: 1 },
+                        { line: 3, key: "input", text: "again = input(\"你想再玩一局嗎？(Y/N): \")", explain: "一局結束後，才在底部詢問是否繼續。這就是先玩再問！", type: "normal", indent: 1 },
+                        { line: 4, key: "loop_end", text: "if not (again == 'Y'):  # 繼續條件：玩家輸入 'Y'", explain: "【Do-While 結束檢查】繼續條件為「again == 'Y'」。因此，若不滿足繼續條件（玩家不想再玩），則 break 跳出。", type: "keyword-break", indent: 1 },
+                        { line: 5, key: "break_win", text: "break", explain: "玩家不想玩了，結束程式。", type: "normal", indent: 2 },
+                        { line: 6, key: "success", text: "print(\"遊戲結束，感謝遊玩！\")", explain: "結束祝賀詞。", type: "normal", indent: 0 }
+                    ],
+                    pseudocode: [
+                        { line: 1, key: "loop_start", text: "執行", explain: "【後測型遊戲起手】無條件先進入遊戲。不論如何，都會至少先玩一局！", type: "keyword-dowhile", indent: 0 },
+                        { line: 2, key: "play_game", text: "輸出 \"--- 遊戲回合開始！砰砰！ ---\"", explain: "運行一局遊戲內容。", type: "normal", indent: 1 },
+                        { line: 3, key: "input", text: "輸入 again", explain: "一局打完，在底部取得玩家是否再玩的意願。", type: "normal", indent: 1 },
+                        { line: 4, key: "loop_end", text: "當 again = \"Y\"", explain: "【後測繼續條件驗收】底部檢測。如果 again 恰好是 \"Y\"（為真），則控制流立刻倒退回第 1 行再次開始新的一局！", type: "keyword-dowhile", indent: 0 },
+                        { line: 5, key: "success", text: "輸出 \"遊戲結束，感謝遊玩！\"", explain: "當輸入為 \"N\" 時，當型條件不成立（為假），退出迴圈並輸出。", type: "normal", indent: 0 }
+                    ]
+                }
+            },
+            repeat: {
+                menu: {
+                    python: [
+                        { line: 1, key: "loop_start", text: "while True:", explain: "【Repeat-Until 模擬】使用 while True 起手，建立直到型後測迴圈。", type: "keyword-repeat", indent: 0 },
+                        { line: 2, key: "print_menu", text: "print(\"1.開始遊戲 | 2.說明 | 3.離開\")", explain: "先顯示選單內容給用戶看。", type: "normal", indent: 1 },
+                        { line: 3, key: "input", text: "choice = int(input(\"請選擇選項 (1-3): \"))", explain: "取得用戶輸入選項。", type: "normal", indent: 1 },
+                        { line: 4, key: "check_invalid", text: "if choice < 1 or choice > 3:", explain: "若輸入超出範圍，印出錯誤。", type: "normal", indent: 1 },
+                        { line: 5, key: "print_error", text: "print(\"選項無效，請重新輸入！\")", explain: "印出警告資訊。", type: "normal", indent: 2 },
+                        { line: 6, key: "loop_end", text: "if 1 <= choice <= 3:  # 終止條件：選擇合規 (1 <= choice <= 3)", explain: "【Repeat-Until 終止條件判定】底部檢測。Until 後面接的是「終止條件」。所以我們在 Python 底部判定：只要「滿足終止條件（輸入合規）」，就直接 break 跳出！", type: "keyword-break", indent: 1 },
+                        { line: 7, key: "break_win", text: "break", explain: "合規，跳出選單迴圈。", type: "normal", indent: 2 },
+                        { line: 8, key: "success", text: "print(\"選單驗證通過，進入主程式！\")", explain: "跳出迴圈後的賀詞。", type: "normal", indent: 0 }
+                    ],
+                    pseudocode: [
+                        { line: 1, key: "loop_start", text: "重複", explain: "【後測直到型迴圈起手】對照投影片 14。大膽直接進入迴圈體，至少執行一次選單。", type: "keyword-repeat", indent: 0 },
+                        { line: 2, key: "print_menu", text: "輸出 \"1.開始遊戲 | 2.說明 | 3.離開\"", explain: "第一步：輸出選單給用戶。", type: "normal", indent: 1 },
+                        { line: 3, key: "input", text: "輸入 choice", explain: "第二步：讀取用戶輸入選項。", type: "normal", indent: 1 },
+                        { line: 4, key: "check_invalid", text: "如果 choice < 1 或 choice > 3 則", explain: "第三步：如果輸入錯誤則印出提示。", type: "normal", indent: 1 },
+                        { line: 5, key: "print_error", text: "輸出 \"選項無效，請重新輸入！\"", explain: "印出警告。", type: "normal", indent: 2 },
+                        { line: 6, key: "loop_end", text: "直至 1 <= choice 且 choice <= 3", explain: "【後測終止條件驗收】在底部（重要考點！）。這是「終止條件」。只要 choice 在 1-3 之間成立（為真），迴圈【立刻終止】；否則倒退重來！", type: "keyword-repeat-until", indent: 0 },
+                        { line: 7, key: "success", text: "輸出 \"選單驗證通過，進入主程式！\"", explain: "成功跳出後執行的最終輸出。", type: "normal", indent: 0 }
+                    ]
+                },
+                validation: {
+                    python: [
+                        { line: 1, key: "loop_start", text: "while True:", explain: "【Repeat-Until 模擬】使用 while True 起手，建立直到型年齡驗證。", type: "keyword-repeat", indent: 0 },
+                        { line: 2, key: "input", text: "age = int(input(\"請輸入年齡 (必須大於0): \"))", explain: "先讓用戶輸入一次年齡。", type: "normal", indent: 1 },
+                        { line: 3, key: "check_invalid", text: "if age <= 0:", explain: "若年齡小於等於 0，印出警告。", type: "normal", indent: 1 },
+                        { line: 4, key: "print_error", text: "print(\"無效年齡，請重試！\")", explain: "警告提示。", type: "normal", indent: 2 },
+                        { line: 5, key: "loop_end", text: "if age > 0:  # 終止條件：年齡合法 (age > 0)", explain: "【Repeat-Until 終止條件判定】Until 關注「何時結束目標」。因此，只要滿足結束條件「年齡大於 0（age > 0）」，則直接 break 跳出！", type: "keyword-break", indent: 1 },
+                        { line: 6, key: "break_win", text: "break", explain: "終止並退出驗證。", type: "normal", indent: 2 },
+                        { line: 7, key: "success", text: "print(\"年齡驗證通過！\")", explain: "驗證成功輸出。", type: "normal", indent: 0 }
+                    ],
+                    pseudocode: [
+                        { line: 1, key: "loop_start", text: "重複", explain: "【直到型後測迴圈起手】直接進入，保證至少先讓用戶輸入一次年齡。", type: "keyword-repeat", indent: 0 },
+                        { line: 2, key: "input", text: "輸入 age", explain: "讀取年齡輸入值。", type: "normal", indent: 1 },
+                        { line: 3, key: "check_invalid", text: "如果 age <= 0 則", explain: "判定輸入合法性。", type: "normal", indent: 1 },
+                        { line: 4, key: "print_error", text: "輸出 \"無效年齡，請重試！\"", explain: "輸出錯誤提示。", type: "normal", indent: 2 },
+                        { line: 5, key: "loop_end", text: "直至 age > 0", explain: "【後測終止條件驗收】底部檢測。一旦 age > 0 條件變為「真（True）」，迴圈【立刻終止】！不合規則重複。", type: "keyword-repeat-until", indent: 0 },
+                        { line: 6, key: "success", text: "輸出 \"年齡驗證通過！\"", explain: "跳出後的成果輸出。", type: "normal", indent: 0 }
+                    ]
+                },
+                rounds: {
+                    python: [
+                        { line: 1, key: "loop_start", text: "while True:", explain: "【Repeat-Until 模擬】使用 while True 模擬先玩後問的直到型迴圈。", type: "keyword-repeat", indent: 0 },
+                        { line: 2, key: "play_game", text: "print(\"--- 遊戲回合開始！砰砰！ ---\")", explain: "遊戲先進行一局回合打擊。", type: "normal", indent: 1 },
+                        { line: 3, key: "input", text: "again = input(\"你想再玩一局嗎？(Y/N): \")", explain: "玩完了，在底部詢問是否繼續。", type: "normal", indent: 1 },
+                        { line: 4, key: "loop_end", text: "if again == 'N':  # 終止條件：玩家輸入 'N'", explain: "【Repeat-Until 終止條件判定】Until 關注「何時停下」。所以我們判定：一旦滿足終止條件「玩家輸入 'N'（again == 'N'）」，則 break 跳出！", type: "keyword-break", indent: 1 },
+                        { line: 5, key: "break_win", text: "break", explain: "玩家不玩了，直接終止迴圈。", type: "normal", indent: 2 },
+                        { line: 6, key: "success", text: "print(\"遊戲結束，感謝遊玩！\")", explain: "迴圈外的後續賀詞輸出。", type: "normal", indent: 0 }
+                    ],
+                    pseudocode: [
+                        { line: 1, key: "loop_start", text: "重複", explain: "【後測直到型迴圈開始】直接跑進去，不事先判斷。玩家必定會先玩到一局！", type: "keyword-repeat", indent: 0 },
+                        { line: 2, key: "play_game", text: "輸出 \"--- 遊戲回合開始！砰砰！ ---\"", explain: "打擊遊戲執行。", type: "normal", indent: 1 },
+                        { line: 3, key: "input", text: "輸入 again", explain: "打完後，詢問並讀取意願。", type: "normal", indent: 1 },
+                        { line: 4, key: "loop_end", text: "編譯器修復處：直至 again = \"N\"", explain: "【後測終止條件驗收】底部檢測。一旦玩家輸入了 \"N\"，代表終止條件變為「真（True）」，迴圈【立刻終止】！如果是 \"Y\" 則繼續重複。", type: "keyword-repeat-until", indent: 0 },
+                        { line: 5, key: "success", text: "輸出 \"遊戲結束，感謝遊玩！\"", explain: "成功跳出後，印出感謝詞。", type: "normal", indent: 0 }
+                    ]
+                }
+            }
+        };
+
+        // ==========================================
+        // 3. UI 渲染 ＆ 狀態控制邏輯
+        // ==========================================
+        function renderCodeLines() {
+            const container = document.getElementById('code-lines-container');
+            if (!container) return;
+            container.innerHTML = '';
+
+            // 根據模式（前測/後測）選取資料來源
+            let templates;
+            if (currentMode === 'while' || currentMode === 'for') {
+                templates = codeTemplates[currentMode][currentLanguage];
+            } else {
+                templates = postTestTemplates[currentMode][subExample][currentLanguage];
+            }
+
+            templates.forEach(item => {
+                const lineDiv = document.createElement('div');
+                lineDiv.id = `line-${item.line}`;
+                lineDiv.className = `code-line py-1 px-2 rounded cursor-pointer hover:bg-slate-200/60 transition-all text-slate-700 flex items-start`;
+                lineDiv.setAttribute('data-key', item.key);
+                lineDiv.onclick = () => highlightCode(item.line, item.explain);
+
+                // 計算精確的左側縮排像素
+                const indentPx = item.indent * 24;
+
+                // 代碼關鍵字高亮
+                let formattedText = item.text
+                    .replace(/while/g, '<span class="text-purple-600 font-bold">while</span>')
+                    .replace(/for/g, '<span class="text-purple-600 font-bold">for</span>')
+                    .replace(/in/g, '<span class="text-purple-600 font-bold">in</span>')
+                    .replace(/break/g, '<span class="text-rose-600 font-bold">break</span>')
+                    .replace(/if/g, '<span class="text-purple-600">if</span>')
+                    .replace(/not/g, '<span class="text-pink-600 font-bold">not</span>')
+                    .replace(/elif/g, '<span class="text-purple-600">elif</span>')
+                    .replace(/print/g, '<span class="text-blue-600">print</span>')
+                    .replace(/int/g, '<span class="text-blue-600">int</span>')
+                    .replace(/input/g, '<span class="text-blue-600">input</span>')
+                    .replace(/range/g, '<span class="text-emerald-600">range</span>')
+                    // Pseudocode DSE 關鍵字 - 優先處理長詞，避免子字串替換干擾
+                    .replace(/否則如果/g, '<span class="text-purple-600 font-bold">否則如果</span>')
+                    .replace(/重複/g, '<span class="text-indigo-600 font-bold">重複</span>')
+                    .replace(/直至/g, '<span class="text-indigo-600 font-bold">直至</span>')
+                    .replace(/執行/g, '<span class="text-amber-600 font-bold">執行</span>')
+                    .replace(/當/g, '<span class="text-purple-600 font-bold">當</span>')
+                    .replace(/輸入/g, '<span class="text-blue-600 font-bold">輸入</span>')
+                    .replace(/輸出/g, '<span class="text-blue-600 font-bold">輸出</span>')
+                    .replace(/如果/g, '<span class="text-purple-600 font-bold">如果</span>')
+                    .replace(/則/g, '<span class="text-purple-600 font-bold">則</span>')
+                    .replace(/設/g, '<span class="text-indigo-600 font-bold">設</span>')
+                    .replace(/由/g, '<span class="text-indigo-600 font-bold">由</span>')
+                    .replace(/至/g, '<span class="text-indigo-600 font-bold">至</span>')
+                    .replace(/退出循環/g, '<span class="text-rose-600 font-bold">退出循環</span>')
+                    .replace(/←/g, '<span class="text-rose-500 font-bold">←</span>')
+                    // 數字與字串
+                    .replace(/63/g, '<span class="text-amber-600">63</span>')
+                    .replace(/1, 6/g, '<span class="text-amber-600">1, 6</span>')
+                    .replace(/"Please guess: "/g, '<span class="text-emerald-600">"Please guess: "</span>')
+                    .replace(/"Please guess the number: "/g, '<span class="text-emerald-600">"Please guess the number: "</span>')
+                    .replace(/"太小了"/g, '<span class="text-emerald-600">"太小了"</span>')
+                    .replace(/"太大了"/g, '<span class="text-emerald-600">"太大了"</span>')
+                    .replace(/"恭喜猜中！"/g, '<span class="text-emerald-600">"恭喜猜中！"</span>')
+                    .replace(/"恭喜猜中！遊戲結束。"/g, '<span class="text-emerald-600">"恭喜猜中！遊戲結束。"</span>')
+                    .replace(/"1.開始遊戲 \| 2.說明 \| 3.離開"/g, '<span class="text-emerald-600">"1.開始遊戲 | 2.說明 | 3.離開"</span>')
+                    .replace(/"請選擇選項 \(1-3\): "/g, '<span class="text-emerald-600">"請選擇選項 (1-3): "</span>')
+                    .replace(/"選項無效，請重新輸入！"/g, '<span class="text-emerald-600">"選項無效，請重新輸入！"</span>')
+                    .replace(/"選單驗證通過，進入主程式！"/g, '<span class="text-emerald-600">"選單驗證通過，進入主程式！"</span>')
+                    .replace(/"請輸入年齡 \(必須大於0\): "/g, '<span class="text-emerald-600">"請輸入年齡 (必須大於0): "</span>')
+                    .replace(/"無效年齡，請重試！"/g, '<span class="text-emerald-600">"無效年齡，請重試！"</span>')
+                    .replace(/"年齡驗證通過！"/g, '<span class="text-emerald-600">"年齡驗證通過！"</span>')
+                    .replace(/"--- 遊戲回合開始！砰砰！ ---"/g, '<span class="text-emerald-600">"--- 遊戲回合開始！砰砰！ ---"</span>')
+                    .replace(/"你想再玩一局嗎？\(Y\/N\): "/g, '<span class="text-emerald-600">"你想再玩一局嗎？(Y/N): "</span>')
+                    .replace(/"遊戲結束，感謝遊玩！"/g, '<span class="text-emerald-600">"遊戲結束，感謝遊玩！"</span>');
+
+                lineDiv.innerHTML = `
+                    <span class="text-slate-400 select-none mr-3 w-4 text-right flex-shrink-0">${item.line}</span>
+                    <span class="inline-block text-xs sm:text-sm" style="padding-left: ${indentPx}px">${formattedText}</span>
+                `;
+                container.appendChild(lineDiv);
+            });
+        }
+
+        // ==========================================
+        // 4. 動態更換左側 Play Zone 內容
+        // ==========================================
+        function updatePlayZoneUI() {
+            const dynamicContainer = document.getElementById('game-dynamic-content');
+            if (!dynamicContainer) return;
+
+            if (currentMode === 'while' || currentMode === 'for') {
+                // 經典猜數字
+                dynamicContainer.innerHTML = `
+                    <div class="text-slate-400 text-xs uppercase tracking-wider mb-2">當前可能範圍</div>
+                    <div class="flex justify-center items-center gap-4 mb-4">
+                        <span id="min-bound" class="text-2xl font-bold text-blue-600 code-font">1</span>
+                        <span class="text-slate-400 font-medium">&larr; 縮小中 &rarr;</span>
+                        <span id="max-bound" class="text-2xl font-bold text-blue-600 code-font">100</span>
+                    </div>
+                    <div class="text-sm text-slate-600 mb-2">輸入你的答案：</div>
+                    <div class="flex gap-2 max-w-xs mx-auto mb-2">
+                        <input type="number" id="player-input" min="1" max="100" placeholder="1-100" 
+                               class="w-full bg-white border border-slate-300 rounded-lg px-4 py-2.5 text-center text-xl font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 code-font">
+                        <button onclick="submitGuess()" id="btn-submit" class="px-6 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition-all flex items-center justify-center shadow-sm">
+                            猜！
+                        </button>
+                    </div>
+                `;
+            }
+            else {
+                // 後測型：選單顯示 / 輸入驗證 / 遊戲回合
+                if (subExample === 'menu') {
+                    dynamicContainer.innerHTML = `
+                        <div class="text-slate-500 text-xs uppercase tracking-wider mb-3">選單顯示（至少顯示一次）</div>
+                        <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-inner max-w-sm mx-auto mb-4 text-left">
+                            <p class="font-bold text-sm border-b border-slate-100 pb-1.5 mb-2 text-slate-800"><i class="fa-solid fa-bars text-blue-500"></i> 主選單系統</p>
+                            <div class="space-y-2 text-xs text-slate-600 font-medium">
+                                <div class="px-2.5 py-1.5 bg-slate-100 rounded border border-slate-200">1. 開始遊戲</div>
+                                <div class="px-2.5 py-1.5 bg-slate-100 rounded border border-slate-200">2. 查看說明</div>
+                                <div class="px-2.5 py-1.5 bg-slate-100 rounded border border-slate-200">3. 離開系統</div>
+                                <div class="px-2.5 py-1.5 bg-rose-50 rounded border border-rose-200 text-rose-600">4. 💥 故意點擊無效選項 (測試迴圈繼續)</div>
+                            </div>
+                        </div>
+                        <div class="flex justify-center gap-2 max-w-xs mx-auto">
+                            <button onclick="triggerPostTest('menu', 1)" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold shadow-sm">按鈕 1</button>
+                            <button onclick="triggerPostTest('menu', 2)" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold shadow-sm">按鈕 2</button>
+                            <button onclick="triggerPostTest('menu', 3)" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold shadow-sm">按鈕 3</button>
+                            <button onclick="triggerPostTest('menu', 4)" class="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-lg text-xs font-bold shadow-sm">按鈕 4</button>
+                        </div>
+                    `;
+                }
+                else if (subExample === 'validation') {
+                    dynamicContainer.innerHTML = `
+                        <div class="text-slate-500 text-xs uppercase tracking-wider mb-3">輸入驗證（必須輸入大於 0 的年齡）</div>
+                        <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-inner max-w-sm mx-auto mb-4">
+                            <p class="text-xs text-slate-500 mb-1.5 font-medium">請輸入年齡：</p>
+                            <div class="flex gap-2 justify-center max-w-xs mx-auto">
+                                <input type="number" id="age-input" placeholder="請輸入整數" 
+                                       class="w-full bg-slate-100 border border-slate-300 rounded-lg px-3 py-1.5 text-center text-sm font-bold focus:outline-none focus:ring-2 focus:ring-amber-500">
+                                <button onclick="triggerPostTest('validation')" class="px-4 bg-amber-500 hover:bg-amber-400 text-white rounded-lg text-xs font-bold shadow-sm flex-shrink-0">送出</button>
+                            </div>
+                            <p class="text-[10px] text-slate-400 mt-2">提示：可以故意輸入 -5 或 0 測試重新輸入，輸入 18 即可通過！</p>
+                        </div>
+                    `;
+                }
+                else if (subExample === 'rounds') {
+                    dynamicContainer.innerHTML = `
+                        <div class="text-slate-500 text-xs uppercase tracking-wider mb-3">遊戲回合（必定先打一局再問）</div>
+                        <div id="rounds-game-zone" class="bg-slate-100 border border-slate-200 rounded-xl p-6 shadow-inner max-w-sm mx-auto flex flex-col items-center justify-center min-h-[120px]">
+                            <button id="btn-fire" onclick="playOneRound()" class="px-6 py-4 bg-purple-600 hover:bg-purple-500 hover:scale-105 active:scale-95 text-white font-bold rounded-full shadow-lg transition-all flex items-center gap-2">
+                                <i class="fa-solid fa-crosshairs animate-ping"></i> 🔴 點此開火擊碎目標！
+                            </button>
+                        </div>
+                        <div id="rounds-ask-zone" class="hidden flex-col items-center max-w-sm mx-auto">
+                            <p class="text-sm font-bold text-slate-800 mb-2">💥 戰鬥結束！你想繼續下一回合嗎？</p>
+                            <div class="flex gap-2">
+                                <button onclick="triggerPostTest('rounds', 'Y')" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold shadow-sm">繼續挑戰 (Y)</button>
+                                <button onclick="triggerPostTest('rounds', 'N')" class="px-5 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-lg text-xs font-bold shadow-sm">離開遊戲 (N)</button>
+                            </div>
+                        </div>
+                    `;
+                }
+            }
+        }
+
+        // ==========================================
+        // 5. 後測型 (Do-While / Repeat-Until) 互動邏輯
+        // ==========================================
+        function triggerPostTest(type, arg) {
+            attempts++;
+            const list = document.getElementById('history-list');
+            if (attempts === 1 && list) list.innerHTML = "";
+
+            const record = document.createElement('div');
+            record.className = "flex justify-between items-center bg-slate-50 px-3 py-1.5 rounded border border-slate-200 text-sm shadow-sm";
+
+            let resultMessage = "";
+            let resultClass = "";
+            let iconHtml = "";
+
+            if (type === 'menu') {
+                const choice = parseInt(arg);
+                if (choice < 1 || choice > 3) {
+                    // 點擊了按鈕 4 (無效) -> 觸發重複
+                    resultMessage = `❌ 你選擇了按鈕 4：無效選項，必須重新顯示並選擇！`;
+                    resultClass = "bg-rose-50 border border-rose-300 rounded-xl p-4 min-h-[80px] flex flex-col justify-center items-center text-center text-rose-700";
+                    iconHtml = '<i class="fa-solid fa-rotate-right text-rose-500 text-xl animate-spin"></i>';
+
+                    record.innerHTML = `
+                        <span class="text-slate-600">第 ${attempts} 次點擊：<strong class="text-rose-600">按鈕 4</strong></span>
+                        <span class="text-xs text-rose-600 font-bold">選項無效，繼續循環</span>
+                    `;
+                    if (list) list.prepend(record);
+
+                    highlightCodeByKey('print_error');
+                } else {
+                    // 合法 -> 順利跳出
+                    resultMessage = `🎉 成功選擇按鈕 ${choice}！驗證通過，順利退出選單迴圈。`;
+                    resultClass = "bg-emerald-50 border-2 border-emerald-500 rounded-xl p-4 min-h-[80px] flex flex-col justify-center items-center text-center text-emerald-700";
+                    iconHtml = '<i class="fa-solid fa-circle-check text-emerald-600 text-2xl"></i>';
+
+                    record.innerHTML = `
+                        <span class="text-slate-600">第 ${attempts} 次點擊：<strong class="text-emerald-600">按鈕 ${choice}</strong></span>
+                        <span class="text-xs text-emerald-600 font-bold">通過，跳出迴圈</span>
+                    `;
+                    if (list) list.prepend(record);
+
+                    highlightCodeByKey('success');
+                    gameOver = true;
+                    disablePostTestInputs();
+                }
+            }
+            else if (type === 'validation') {
+                const ageInput = document.getElementById('age-input');
+                const age = ageInput ? parseInt(ageInput.value) : NaN;
+
+                if (isNaN(age) || age <= 0) {
+                    resultMessage = `❌ 你輸入年齡為 ${isNaN(age) ? '空白' : age}：無效，必須大於 0，重試！`;
+                    resultClass = "bg-rose-50 border border-rose-300 rounded-xl p-4 min-h-[80px] flex flex-col justify-center items-center text-center text-rose-700";
+                    iconHtml = '<i class="fa-solid fa-triangle-exclamation text-rose-500 text-xl"></i>';
+
+                    record.innerHTML = `
+                        <span class="text-slate-600">第 ${attempts} 次輸入：<strong class="text-rose-600">${isNaN(age) ? '無效' : age} 歲</strong></span>
+                        <span class="text-xs text-rose-600 font-bold">不合法，重入</span>
+                    `;
+                    if (list) list.prepend(record);
+
+                    highlightCodeByKey('print_error');
+                    if (ageInput) {
+                        ageInput.value = "";
+                        ageInput.focus();
+                    }
+                } else {
+                    resultMessage = `🎉 年齡輸入 ${age}：驗證成功！大於 0，跳出迴圈！`;
+                    resultClass = "bg-emerald-50 border-2 border-emerald-500 rounded-xl p-4 min-h-[80px] flex flex-col justify-center items-center text-center text-emerald-700";
+                    iconHtml = '<i class="fa-solid fa-user-shield text-emerald-600 text-2xl"></i>';
+
+                    record.innerHTML = `
+                        <span class="text-slate-600">第 ${attempts} 次輸入：<strong class="text-emerald-600">${age} 歲</strong></span>
+                        <span class="text-xs text-emerald-600 font-bold">成功跳出</span>
+                    `;
+                    if (list) list.prepend(record);
+
+                    highlightCodeByKey('success');
+                    gameOver = true;
+                    disablePostTestInputs();
+                }
+            }
+            else if (type === 'rounds') {
+                const choice = arg; // 'Y' 或 'N'
+
+                if (choice === 'Y') {
+                    resultMessage = `🟢 你選擇了「再玩一局」！程式判定符合「繼續條件」，開始下一輪！`;
+                    resultClass = "bg-blue-50 border border-blue-300 rounded-xl p-4 min-h-[80px] flex flex-col justify-center items-center text-center text-blue-700";
+                    iconHtml = '<i class="fa-solid fa-arrows-spin text-blue-500 text-xl animate-spin"></i>';
+
+                    record.innerHTML = `
+                        <span class="text-slate-600">第 ${attempts} 次戰鬥後：<strong class="text-blue-600">繼續 (Y)</strong></span>
+                        <span class="text-xs text-blue-600 font-bold">開始下一回合</span>
+                    `;
+                    if (list) list.prepend(record);
+
+                    // 切回戰鬥開火區
+                    const gameZoneEl = document.getElementById('rounds-game-zone');
+                    if (gameZoneEl) gameZoneEl.classList.remove('hidden');
+                    const askZoneEl = document.getElementById('rounds-ask-zone');
+                    if (askZoneEl) askZoneEl.classList.add('hidden');
+
+                    highlightCodeByKey('loop_start');
+                } else {
+                    resultMessage = `🚪 你選擇了「退出遊戲」！驗證終止，順利離開迴圈。`;
+                    resultClass = "bg-emerald-50 border-2 border-emerald-500 rounded-xl p-4 min-h-[80px] flex flex-col justify-center items-center text-center text-emerald-700";
+                    iconHtml = '<i class="fa-solid fa-door-open text-emerald-600 text-2xl"></i>';
+
+                    record.innerHTML = `
+                        <span class="text-slate-600">第 ${attempts} 次戰鬥後：<strong class="text-rose-600">退出 (N)</strong></span>
+                        <span class="text-xs text-rose-600 font-bold">遊戲終止退出</span>
+                    `;
+                    if (list) list.prepend(record);
+
+                    highlightCodeByKey('success');
+                    gameOver = true;
+                    disablePostTestInputs();
+                }
+            }
+
+            // 更新提示區
+            const feedbackBox = document.getElementById('feedback-box');
+            if (feedbackBox) {
+                feedbackBox.className = resultClass;
+            }
+            const feedbackIconEl = document.getElementById('feedback-icon');
+            if (feedbackIconEl) {
+                feedbackIconEl.innerHTML = iconHtml;
+            }
+            const feedbackTextEl = document.getElementById('feedback-text');
+            if (feedbackTextEl) {
+                feedbackTextEl.className = "font-bold text-sm sm:text-base";
+                feedbackTextEl.textContent = resultMessage;
+            }
+        }
+
+        // 遊戲回合的點火開戰
+        function playOneRound() {
+            // 點火開火後，立刻亮高亮 play_game 區塊，並把開火區隱藏，顯示 Y/N 詢問區
+            const gameZoneEl = document.getElementById('rounds-game-zone');
+            if (gameZoneEl) gameZoneEl.classList.add('hidden');
+            const askZoneEl = document.getElementById('rounds-ask-zone');
+            if (askZoneEl) askZoneEl.classList.remove('hidden');
+
+            highlightCodeByKey('input');
+        }
+
+        // 禁用後測型輸入以防二次點擊
+        function disablePostTestInputs() {
+            if (subExample === 'menu') {
+                document.querySelectorAll('#game-dynamic-content button').forEach(b => b.disabled = true);
+            } else if (subExample === 'validation') {
+                const inp = document.getElementById('age-input');
+                if (inp) inp.disabled = true;
+                const btn = document.querySelector('#game-dynamic-content button');
+                if (btn) btn.disabled = true;
+            } else if (subExample === 'rounds') {
+                document.querySelectorAll('#rounds-ask-zone button').forEach(b => b.disabled = true);
+            }
+        }
+
+
+        // ==========================================
+        // 6. 前測型 (While / For) 猜數字提交流程
+        // ==========================================
+        function submitGuess() {
+            if (gameOver) return;
+
+            const inputEl = document.getElementById('player-input');
+            if (!inputEl) return;
+            const guessVal = parseInt(inputEl.value);
+
+            // 驗證輸入防呆
+            if (isNaN(guessVal) || guessVal < minBoundary || guessVal > maxBoundary) {
+                showAlert(`請輸入在有效範圍 ${minBoundary} 到 ${maxBoundary} 之間的數字！`);
+                return;
+            }
+
+            attempts++;
+
+            let resultMessage = "";
+            let resultClass = "";
+            let iconHtml = "";
+            const list = document.getElementById('history-list');
+            if (attempts === 1 && list) list.innerHTML = "";
+
+            if (currentMode === 'while') {
+                // WHILE LOOP 邏輯
+                const attemptInfoEl = document.getElementById('attempt-info');
+                if (attemptInfoEl) attemptInfoEl.textContent = `已嘗試次數：${attempts} 次`;
+
+                if (guessVal === secretNumber) {
+                    gameOver = true;
+                    resultMessage = `🎉 恭喜你！猜對了！答案就是秘密數字 63！`;
+                    resultClass = "bg-emerald-50 border-2 border-emerald-500 rounded-xl p-4 min-h-[80px] flex flex-col justify-center items-center text-center text-emerald-700";
+                    iconHtml = '<i class="fa-solid fa-trophy text-emerald-600 text-2xl animate-bounce"></i>';
+
+                    inputEl.disabled = true;
+                    const btnSubmitEl = document.getElementById('btn-submit');
+                    if (btnSubmitEl) btnSubmitEl.disabled = true;
+
+                    highlightCodeByKey('success');
+                } else if (guessVal < secretNumber) {
+                    resultMessage = `太小了！`;
+                    resultClass = "bg-blue-50 border border-blue-300 rounded-xl p-4 min-h-[80px] flex flex-col justify-center items-center text-center text-blue-700";
+                    iconHtml = '<i class="fa-solid fa-arrow-up text-blue-500 text-xl"></i>';
+
+                    minBoundary = Math.max(minBoundary, guessVal + 1);
+                    const minBoundEl = document.getElementById('min-bound');
+                    if (minBoundEl) minBoundEl.textContent = minBoundary;
+
+                    highlightCodeByKey('print_low');
+                } else {
+                    resultMessage = `太大了！`;
+                    resultClass = "bg-rose-50 border border-rose-300 rounded-xl p-4 min-h-[80px] flex flex-col justify-center items-center text-center text-rose-700";
+                    iconHtml = '<i class="fa-solid fa-arrow-down text-rose-500 text-xl"></i>';
+
+                    maxBoundary = Math.min(maxBoundary, guessVal - 1);
+                    const maxBoundEl = document.getElementById('max-bound');
+                    if (maxBoundEl) maxBoundEl.textContent = maxBoundary;
+
+                    highlightCodeByKey('print_high');
+                }
+            }
+            else if (currentMode === 'for') {
+                // FOR LOOP 邏輯
+                const remainingLives = maxForAttempts - attempts;
+                const attemptInfoEl = document.getElementById('attempt-info');
+                if (attemptInfoEl) attemptInfoEl.textContent = `剩餘生命值：${remainingLives} / 5`;
+
+                // 更新生命值心形圖案
+                const heartsDisplayEl = document.getElementById('hearts-display');
+                if (heartsDisplayEl) heartsDisplayEl.textContent = "❤️".repeat(remainingLives) + "🖤".repeat(attempts);
+
+                if (guessVal === secretNumber) {
+                    gameOver = true;
+                    resultMessage = `🎉 拆彈成功！成功阻止了大爆炸！答案就是 63！`;
+                    resultClass = "bg-emerald-50 border-2 border-emerald-500 rounded-xl p-4 min-h-[80px] flex flex-col justify-center items-center text-center text-emerald-700";
+                    iconHtml = '<i class="fa-solid fa-shield-halved text-emerald-600 text-2xl"></i>';
+
+                    inputEl.disabled = true;
+                    const btnSubmitEl = document.getElementById('btn-submit');
+                    if (btnSubmitEl) btnSubmitEl.disabled = true;
+
+                    highlightCodeByKey('break_win');
+                } else {
+                    // 猜錯了，如果是最後一次就爆炸
+                    if (remainingLives <= 0) {
+                        gameOver = true;
+                        resultMessage = `💥 嗶嗶——砰！！！你已經嘗試了 5 次，炸彈引爆了！`;
+                        resultClass = "bg-rose-100 border-2 border-rose-500 rounded-xl p-4 min-h-[80px] flex flex-col justify-center items-center text-center text-rose-700";
+                        iconHtml = '<i class="fa-solid fa-burst text-rose-600 text-3xl"></i>';
+
+                        // 震動卡片動畫
+                        const gameCardEl = document.getElementById('game-card');
+                        if (gameCardEl) gameCardEl.classList.add('shake-effect', 'bg-rose-100', 'border-rose-300');
+
+                        inputEl.disabled = true;
+                        const btnSubmitEl = document.getElementById('btn-submit');
+                        if (btnSubmitEl) btnSubmitEl.disabled = true;
+
+                        highlightCodeByKey('loop_end');
+                    } else {
+                        // 還沒用完，繼續提示大小
+                        if (guessVal < secretNumber) {
+                            resultMessage = `太小了！扣除 1 點生命值！`;
+                            resultClass = "bg-blue-50 border border-blue-300 rounded-xl p-4 min-h-[80px] flex flex-col justify-center items-center text-center text-blue-700";
+                            iconHtml = '<i class="fa-solid fa-heart-crack text-rose-500 text-xl"></i>';
+
+                            minBoundary = Math.max(minBoundary, guessVal + 1);
+                            const minBoundEl = document.getElementById('min-bound');
+                            if (minBoundEl) minBoundEl.textContent = minBoundary;
+
+                            highlightCodeByKey('print_low');
+                        } else {
+                            resultMessage = `太大了！扣除 1 點生命值！`;
+                            resultClass = "bg-rose-50 border border-rose-300 rounded-xl p-4 min-h-[80px] flex flex-col justify-center items-center text-center text-rose-700";
+                            iconHtml = '<i class="fa-solid fa-heart-crack text-rose-500 text-xl"></i>';
+
+                            maxBoundary = Math.min(maxBoundary, guessVal - 1);
+                            const maxBoundEl = document.getElementById('max-bound');
+                            if (maxBoundEl) maxBoundEl.textContent = maxBoundary;
+
+                            highlightCodeByKey('print_high');
+                        }
+                    }
+                }
+            }
+
+            // 更新提示區
+            const feedbackBox = document.getElementById('feedback-box');
+            if (feedbackBox) {
+                feedbackBox.className = resultClass;
+            }
+            const feedbackIconEl = document.getElementById('feedback-icon');
+            if (feedbackIconEl) {
+                feedbackIconEl.innerHTML = iconHtml;
+            }
+            const feedbackTextEl = document.getElementById('feedback-text');
+            if (feedbackTextEl) {
+                feedbackTextEl.className = "font-bold text-lg";
+                feedbackTextEl.textContent = resultMessage;
+            }
+
+            // 更新歷史紀錄
+            addHistoryRecord(guessVal, guessVal === secretNumber ? '答對' : guessVal < secretNumber ? '太小' : '太大');
+
+            // 清空輸入框並聚焦
+            inputEl.value = "";
+            inputEl.focus();
+        }
+
+        // ==========================================
+        // 7. 切換後測型三大案例 (修復核心：同步更新主標題)
+        // ==========================================
+        function switchSubExample(sub) {
+            subExample = sub;
+
+            const btnMenu = document.getElementById('sub-menu');
+            const btnVal = document.getElementById('sub-validation');
+            const btnRounds = document.getElementById('sub-rounds');
+
+            // 重置按鈕樣式
+            if (btnMenu && btnVal && btnRounds) {
+                [btnMenu, btnVal, btnRounds].forEach(b => b.className = "flex-1 py-1 rounded-lg text-xs font-bold transition-all text-slate-500 hover:text-slate-800");
+            }
+
+            const gameTitleEl = document.getElementById('game-title');
+            const gameSubtitleEl = document.getElementById('game-subtitle');
+            const modeText = currentMode === 'dowhile' ? 'Do-While' : 'Repeat-Until';
+
+            if (sub === 'menu') {
+                if (btnMenu) btnMenu.className = "flex-1 py-1 rounded-lg text-xs font-bold transition-all bg-white text-slate-800 shadow-sm border border-slate-200/50";
+                if (gameTitleEl) gameTitleEl.textContent = `主選單驗證系統 (${modeText})`;
+                if (gameSubtitleEl) gameSubtitleEl.textContent = "選單顯示：一定要先顯示選單給用戶看一次，然後才判斷輸入是否合法！";
+            } else if (sub === 'validation') {
+                if (btnVal) btnVal.className = "flex-1 py-1 rounded-lg text-xs font-bold transition-all bg-white text-slate-800 shadow-sm border border-slate-200/50";
+                if (gameTitleEl) gameTitleEl.textContent = `使用者輸入驗證 (${modeText})`;
+                if (gameSubtitleEl) gameSubtitleEl.textContent = "輸入驗證：一定要先讓用戶至少輸入一次年齡，接著才判斷其範圍是否合法！";
+            } else if (sub === 'rounds') {
+                if (btnRounds) btnRounds.className = "flex-1 py-1 rounded-lg text-xs font-bold transition-all bg-white text-slate-800 shadow-sm border border-slate-200/50";
+                if (gameTitleEl) gameTitleEl.textContent = `循環遊戲回合演示 (${modeText})`;
+                if (gameSubtitleEl) gameSubtitleEl.textContent = "遊戲回合：一定要先打完一回合，之後才在底端問你要不要再玩一次！";
+            }
+
+            // 更新文件名顯示
+            const filenameEl = document.getElementById('code-filename');
+            if (filenameEl) {
+                if (currentLanguage === 'python') {
+                    filenameEl.textContent = `guess_game_${currentMode}.py`;
+                } else {
+                    filenameEl.textContent = `guess_game_${currentMode}_pseudocode.txt`;
+                }
+            }
+
+            updatePlayZoneUI();
+            renderCodeLines();
+            startNewGame();
+        }
+
+        // ==========================================
+        // 8. 切換模式邏輯
+        // ==========================================
+        function switchMode(mode) {
+            currentMode = mode;
+
+            // 重置所有模式切換按鈕
+            const tabs = ['while', 'for', 'dowhile', 'repeat'];
+            tabs.forEach(t => {
+                const el = document.getElementById(`tab-${t}`);
+                if (el) el.className = "px-3 py-1.5 rounded-lg text-xs font-bold transition-all text-slate-500 hover:text-slate-800";
+            });
+
+            const activeTab = document.getElementById(`tab-${mode}`);
+            const selectorContainer = document.getElementById('post-test-selector-container');
+
+            const glowBgEl = document.getElementById('glow-bg');
+            const modeBadgeEl = document.getElementById('mode-badge');
+            const gameTitleEl = document.getElementById('game-title');
+            const gameSubtitleEl = document.getElementById('game-subtitle');
+            const livesContainerEl = document.getElementById('lives-container');
+            const codeGlowEl = document.getElementById('code-glow');
+            const codeBadgeEl = document.getElementById('code-badge');
+            const codeTitleEl = document.getElementById('code-title');
+            const teacherTipBoxEl = document.getElementById('teacher-tip-box');
+            const teacherTipTextEl = document.getElementById('teacher-tip-text');
+
+            if (mode === 'while') {
+                if (activeTab) activeTab.className = "px-3 py-1.5 rounded-lg text-xs font-bold transition-all bg-white text-blue-600 shadow-sm";
+                if (selectorContainer) selectorContainer.classList.add('hidden');
+
+                if (glowBgEl) glowBgEl.className = "absolute top-0 right-0 w-32 h-32 bg-blue-50 rounded-full blur-3xl pointer-events-none transition-all";
+                if (modeBadgeEl) {
+                    modeBadgeEl.className = "px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-600 border border-blue-100";
+                    modeBadgeEl.textContent = "While Loop: 前測型迴圈";
+                }
+                if (gameTitleEl) gameTitleEl.textContent = "體驗遊戲（秘密數字已設定）";
+                if (gameSubtitleEl) gameSubtitleEl.textContent = "在進入大門前先驗收條件！只要沒猜對，就會一遍又一遍重複！";
+                if (livesContainerEl) livesContainerEl.classList.add('hidden');
+
+                if (codeGlowEl) codeGlowEl.className = "absolute top-0 right-0 w-32 h-32 bg-emerald-50 rounded-full blur-3xl pointer-events-none";
+                if (codeBadgeEl) {
+                    codeBadgeEl.className = "px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-600 border border-emerald-100";
+                    codeBadgeEl.textContent = "Step 2. 邏輯解密 (While 版)";
+                }
+                if (codeTitleEl) codeTitleEl.textContent = "While Loop 極簡代碼解析";
+
+                if (teacherTipBoxEl) teacherTipBoxEl.className = "bg-amber-50 border border-amber-200 rounded-xl p-4";
+                if (teacherTipTextEl) teacherTipTextEl.textContent = "引導學生思考：While 屬於「前測型迴圈（對照投影片 12）」。如果一開始條件不成立（例如 guess 一開始就剛好為 63），這個迴圈「一次都不會執行」。";
+            }
+            else if (mode === 'for') {
+                if (activeTab) activeTab.className = "px-3 py-1.5 rounded-lg text-xs font-bold transition-all bg-white text-rose-600 shadow-sm";
+                if (selectorContainer) selectorContainer.classList.add('hidden');
+
+                if (glowBgEl) glowBgEl.className = "absolute top-0 right-0 w-32 h-32 bg-rose-50 rounded-full blur-3xl pointer-events-none transition-all";
+                if (modeBadgeEl) {
+                    modeBadgeEl.className = "px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-50 text-rose-600 border border-rose-100";
+                    modeBadgeEl.textContent = "For Loop: 5次限次爆炸";
+                }
+                if (gameTitleEl) gameTitleEl.textContent = "限次炸彈房（秘密數字已設定）";
+                if (gameSubtitleEl) gameSubtitleEl.textContent = "每猜錯一次扣 1 點生命值！第 5 次沒猜中就會發生大爆炸！";
+                if (livesContainerEl) livesContainerEl.classList.remove('hidden');
+
+                if (codeGlowEl) codeGlowEl.className = "absolute top-0 right-0 w-32 h-32 bg-rose-50 rounded-full blur-3xl pointer-events-none";
+                if (codeBadgeEl) {
+                    codeBadgeEl.className = "px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-50 text-rose-600 border border-rose-100";
+                    codeBadgeEl.textContent = "Step 2. 邏輯解密 (For 版)";
+                }
+                if (codeTitleEl) codeTitleEl.textContent = "For Loop 極簡代碼解析";
+
+                if (teacherTipBoxEl) teacherTipBoxEl.className = "bg-rose-50 border border-rose-200 rounded-xl p-4";
+                if (teacherTipTextEl) teacherTipTextEl.textContent = "計數控制特性（投影片 10）：變量 attempt 會自動在每次循環底端加 1 直到上限值。中斷點 (Python 的 break) 是讓答對者提早離開、避免死板計數的關鍵！";
+            }
+            else if (mode === 'dowhile') {
+                if (activeTab) activeTab.className = "px-3 py-1.5 rounded-lg text-xs font-bold transition-all bg-white text-amber-600 shadow-sm";
+                if (selectorContainer) selectorContainer.classList.remove('hidden');
+
+                if (glowBgEl) glowBgEl.className = "absolute top-0 right-0 w-32 h-32 bg-amber-50 rounded-full blur-3xl pointer-events-none transition-all";
+                if (modeBadgeEl) {
+                    modeBadgeEl.className = "px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-600 border border-amber-100";
+                    modeBadgeEl.textContent = "Do-While Loop: 當型後測迴圈";
+                }
+                if (livesContainerEl) livesContainerEl.classList.add('hidden');
+
+                if (codeGlowEl) codeGlowEl.className = "absolute top-0 right-0 w-32 h-32 bg-amber-50 rounded-full blur-3xl pointer-events-none";
+                if (codeBadgeEl) {
+                    codeBadgeEl.className = "px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-600 border border-amber-100";
+                    codeBadgeEl.textContent = "Step 2. 邏輯解密 (Do-While)";
+                }
+                if (codeTitleEl) codeTitleEl.textContent = "Do-While 語義 & 條件驗證";
+
+                if (teacherTipBoxEl) teacherTipBoxEl.className = "bg-amber-50 border border-amber-200 rounded-xl p-4";
+                if (teacherTipTextEl) teacherTipTextEl.textContent = "後測當型邏輯（投影片 13）：後測型特徵在於先執行後檢測。Do-While 的原理是「條件為真時繼續、為假時退出」，因此 Python 底部必須用 not 邏輯來正確模擬條件判斷。";
+
+                switchSubExample(subExample);
+            }
+            else if (mode === 'repeat') {
+                if (activeTab) activeTab.className = "px-3 py-1.5 rounded-lg text-xs font-bold transition-all bg-white text-purple-600 shadow-sm";
+                if (selectorContainer) selectorContainer.classList.remove('hidden');
+
+                if (glowBgEl) glowBgEl.className = "absolute top-0 right-0 w-32 h-32 bg-purple-50 rounded-full blur-3xl pointer-events-none transition-all";
+                if (modeBadgeEl) {
+                    modeBadgeEl.className = "px-2.5 py-1 rounded-full text-xs font-semibold bg-purple-50 text-purple-600 border border-purple-100";
+                    modeBadgeEl.textContent = "Repeat-Until: 直到型後測迴圈";
+                }
+                if (livesContainerEl) livesContainerEl.classList.add('hidden');
+
+                if (codeGlowEl) codeGlowEl.className = "absolute top-0 right-0 w-32 h-32 bg-purple-50 rounded-full blur-3xl pointer-events-none";
+                if (codeBadgeEl) {
+                    codeBadgeEl.className = "px-2.5 py-1 rounded-full text-xs font-semibold bg-purple-50 text-purple-600 border border-purple-100";
+                    codeBadgeEl.textContent = "Step 2. 邏輯解密 (Repeat 版)";
+                }
+                if (codeTitleEl) codeTitleEl.textContent = "Repeat-Until 語義 & 條件驗證";
+
+                if (teacherTipBoxEl) teacherTipBoxEl.className = "bg-purple-50 border border-purple-200 rounded-xl p-4";
+                if (teacherTipTextEl) teacherTipTextEl.textContent = "重要 DSE 考點對比（投影片 14）：Repeat-Until 與 Do-While 一樣保證至少執行一次。但不同的是，Until 後面接的是「終止條件」：為真時終止退出，為假時則往回重複！";
+
+                switchSubExample(subExample);
+            }
+
+            // 更新文件名
+            const filenameEl = document.getElementById('code-filename');
+            if (filenameEl) {
+                if (currentLanguage === 'python') {
+                    filenameEl.textContent = `guess_game_${mode}.py`;
+                } else {
+                    filenameEl.textContent = `guess_game_${mode}_pseudocode.txt`;
+                }
+            }
+
+            updatePlayZoneUI();
+            renderCodeLines();
+            document.getElementById('explanation-container').innerHTML = "💡 請點擊左側的任何一行程式碼，這裡會展示它在剛才玩遊戲時對應的運作原理與功能！";
+            startNewGame();
+        }
+
+        // ==========================================
+        // 9. 基礎輔助工具
+        // ==========================================
+        function showAlert(msg) {
+            const alertEl = document.getElementById('game-alert');
+            if (alertEl) {
+                alertEl.textContent = msg;
+                alertEl.classList.remove('hidden');
+                setTimeout(() => {
+                    alertEl.classList.add('hidden');
+                }, 3000);
+            }
+        }
+
+        function resetGame() {
+            startNewGame();
+        }
+
+        // 語意高亮定位
+        function highlightCodeByKey(semanticKey) {
+            // 清除高亮
+            document.querySelectorAll('.code-line').forEach(el => {
+                el.classList.remove('bg-blue-100/70', 'border-l-2', 'border-blue-500', 'bg-rose-100/70', 'border-rose-500', 'bg-amber-100/70', 'border-amber-500', 'bg-purple-100/70', 'border-purple-500');
+            });
+
+            const activeLine = document.querySelector(`.code-line[data-key="${semanticKey}"]`);
+            if (activeLine) {
+                let colorClass = 'bg-blue-100/70';
+                let borderClass = 'border-blue-500';
+
+                if (currentMode === 'for') { colorClass = 'bg-rose-100/70'; borderClass = 'border-rose-500'; }
+                else if (currentMode === 'dowhile') { colorClass = 'bg-amber-100/70'; borderClass = 'border-amber-500'; }
+                else if (currentMode === 'repeat') { colorClass = 'bg-purple-100/70'; borderClass = 'border-purple-500'; }
+
+                activeLine.classList.add(colorClass, 'border-l-2', borderClass);
+                activeLine.click();
+            }
+        }
+
+        // 點擊程式碼顯示解說
+        function highlightCode(lineNum, text) {
+            // 清除所有舊的高亮樣式
+            document.querySelectorAll('.code-line').forEach(el => {
+                el.classList.remove('bg-blue-100/70', 'border-l-2', 'border-blue-500', 'bg-rose-100/70', 'border-rose-500', 'bg-amber-100/70', 'border-amber-500', 'bg-purple-100/70', 'border-purple-500');
+            });
+
+            // 加上當前模式適配的高亮樣式
+            const activeLine = document.getElementById(`line-${lineNum}`);
+            if (activeLine) {
+                let colorClass = 'bg-blue-100/70';
+                let borderClass = 'border-blue-500';
+
+                if (currentMode === 'for') { colorClass = 'bg-rose-100/70'; borderClass = 'border-rose-500'; }
+                else if (currentMode === 'dowhile') { colorClass = 'bg-amber-100/70'; borderClass = 'border-amber-500'; }
+                else if (currentMode === 'repeat') { colorClass = 'bg-purple-100/70'; borderClass = 'border-purple-500'; }
+
+                activeLine.classList.add(colorClass, 'border-l-2', borderClass);
+            }
+
+            // 更新右側說明內容卡片
+            const expContainer = document.getElementById('explanation-container');
+            if (expContainer) {
+                let borderStyle = 'border-blue-100 text-blue-700 bg-blue-50';
+
+                if (currentMode === 'for') borderStyle = 'border-rose-100 text-rose-700 bg-rose-50';
+                else if (currentMode === 'dowhile') borderStyle = 'border-amber-100 text-amber-700 bg-amber-50';
+                else if (currentMode === 'repeat') borderStyle = 'border-purple-100 text-purple-700 bg-purple-50';
+
+                expContainer.innerHTML = `
+                    <div class="font-bold text-slate-800 mb-2 text-sm">
+                        第 ${lineNum} 行邏輯說明：
+                    </div>
+                    <p class="text-xs sm:text-sm leading-relaxed p-3 rounded-lg border ${borderStyle}">
+                        ${text}
+                    </p>
+                `;
+            }
+        }
+
+        // 歷史嘗試記錄卡片渲染
+        function addHistoryRecord(guess, result) {
+            const list = document.getElementById('history-list');
+            if (!list) return;
+            if (attempts === 1) {
+                list.innerHTML = ""; // 清除預設「沒有紀錄」的字樣
+            }
+
+            const record = document.createElement('div');
+            record.className = "flex justify-between items-center bg-slate-50 px-3 py-1.5 rounded border border-slate-200 text-sm shadow-sm";
+
+            let badgeColor = "text-blue-600 font-medium";
+            if (result === '答對') badgeColor = "text-emerald-600 font-bold";
+            if (result === '太大') badgeColor = "text-rose-600 font-medium";
+
+            record.innerHTML = `
+                <span class="text-slate-600">第 ${attempts} 次猜：<strong class="text-slate-900 code-font">${guess}</strong></span>
+                <span class="text-xs ${badgeColor}">${result}</span>
+            `;
+            list.prepend(record); // 最新猜測紀錄置頂
+        }
+
+        // 安全防護版：初始化與狀態清空
+        function startNewGame() {
+            minBoundary = 1;
+            maxBoundary = 100;
+            attempts = 0;
+            gameOver = false;
+
+            // 1. 僅在前測型 (while, for) 下嘗試操作這些 DOM
+            const minBoundEl = document.getElementById('min-bound');
+            const maxBoundEl = document.getElementById('max-bound');
+            if (minBoundEl) minBoundEl.textContent = minBoundary;
+            if (maxBoundEl) maxBoundEl.textContent = maxBoundary;
+
+            const playerInputEl = document.getElementById('player-input');
+            if (playerInputEl) {
+                playerInputEl.value = "";
+                playerInputEl.disabled = false;
+            }
+
+            const btnSubmitEl = document.getElementById('btn-submit');
+            if (btnSubmitEl) btnSubmitEl.disabled = false;
+
+            const gameCardEl = document.getElementById('game-card');
+            if (gameCardEl) {
+                gameCardEl.classList.remove('shake-effect', 'bg-rose-100', 'border-rose-300');
+            }
+
+            // 2. 處理 For Loop 模式的生命值顯示
+            const attemptInfoEl = document.getElementById('attempt-info');
+            const heartsDisplayEl = document.getElementById('hearts-display');
+            if (currentMode === 'for') {
+                if (heartsDisplayEl) heartsDisplayEl.textContent = "❤️❤️❤️❤️❤️";
+                if (attemptInfoEl) attemptInfoEl.textContent = `剩餘生命值：5 / 5`;
+            } else {
+                if (attemptInfoEl) attemptInfoEl.textContent = "已嘗試次數：0 次";
+            }
+
+            // 3. 預設提示
+            const feedbackBox = document.getElementById('feedback-box');
+            if (feedbackBox) {
+                feedbackBox.className = "bg-slate-50 border border-slate-200 rounded-xl p-4 min-h-[80px] flex flex-col justify-center items-center text-center";
+            }
+
+            const feedbackIconEl = document.getElementById('feedback-icon');
+            if (feedbackIconEl) {
+                let iconClass = 'fa-circle-question text-slate-400';
+                if (currentMode === 'for') iconClass = 'fa-bomb text-rose-500 animate-pulse';
+                if (currentMode === 'dowhile') iconClass = 'fa-rotate-right text-amber-500';
+                if (currentMode === 'repeat') iconClass = 'fa-arrows-spin text-purple-500';
+                feedbackIconEl.innerHTML = `<i class="fa-solid ${iconClass} text-xl mb-1"></i>`;
+            }
+
+            const feedbackTextEl = document.getElementById('feedback-text');
+            if (feedbackTextEl) {
+                feedbackTextEl.className = "text-slate-600 font-medium";
+                let defaultText = "這局的秘密數字已設定！猜一猜（提示：1 到 100 之間）";
+                if (currentMode === 'for') defaultText = "炸彈已啟動！你有 5 次生命值，猜對拆彈，猜錯引爆！";
+                if (currentMode === 'dowhile') defaultText = "Do-While 模式：直接輸入你第一個直覺答案！";
+                if (currentMode === 'repeat') defaultText = "Repeat-Until 模式：這回我們重複，直到 (UNTIL) 猜中 63 為止！";
+                feedbackTextEl.textContent = defaultText;
+            }
+
+            const historyListEl = document.getElementById('history-list');
+            if (historyListEl) {
+                historyListEl.innerHTML = '<p class="text-xs text-slate-400 text-center py-4">目前沒有任何紀錄</p>';
+            }
+        }
+
+        // 初始化
+        updatePlayZoneUI();
+        renderCodeLines();
+        startNewGame();
+    </script>
+</body>
+
+</html>

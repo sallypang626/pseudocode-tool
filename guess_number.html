@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>先玩後學！ICT 猜數字遊戲大挑戰 (While vs For Loop)</title>
+    <!-- 引入 Tailwind CSS 提供現代感 UI -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入 FontAwesome 圖標 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Share+Tech+Mono&display=swap"
+        rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: #f1f5f9;
+            /* 淺灰藍底色 */
+        }
+
+        .code-font {
+            font-family: 'Share Tech Mono', monospace;
+        }
+
+        /* 震動動畫，用於爆炸效果 */
+        @keyframes shake {
+
+            0%,
+            100% {
+                transform: translateX(0);
+            }
+
+            10%,
+            30%,
+            50%,
+            70%,
+            90% {
+                transform: translateX(-5px);
+            }
+
+            20%,
+            40%,
+            60%,
+            80% {
+                transform: translateX(5px);
+            }
+        }
+
+        .shake-effect {
+            animation: shake 0.5s ease-in-out;
+        }
+
+        /* 數值區間條動畫過渡 */
+        .range-track {
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* 滾動條美化 */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #e2e8f0;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+
+<body class="text-slate-800 min-h-screen flex flex-col justify-between pb-10">
+
+    <!-- 頂部導航與標題 -->
+    <header class="border-b border-slate-200 bg-white py-4 px-6 mb-6 shadow-sm">
+        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-3">
+                <div class="bg-blue-50 p-2 rounded-lg border border-blue-100">
+                    <i class="fa-solid fa-gamepad text-blue-600 text-2xl animate-pulse"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold text-slate-900 tracking-wide">中四 ICT 課堂體驗：迴圈邏輯大探索</h1>
+                    <p class="text-xs text-slate-500">先玩玩看，體驗兩種不同「重複規則」的遊戲機件運作！</p>
+                </div>
+            </div>
+            <!-- 模式切換器 -->
+            <div class="flex bg-slate-100 p-1.5 rounded-xl border border-slate-200">
+                <button id="tab-while" onclick="switchMode('while')"
+                    class="px-4 py-2 rounded-lg text-sm font-bold transition-all bg-white text-blue-600 shadow-sm">
+                    <i class="fa-solid fa-infinity mr-1"></i> 模式一：無限挑戰
+                </button>
+                <button id="tab-for" onclick="switchMode('for')"
+                    class="px-4 py-2 rounded-lg text-sm font-bold transition-all text-slate-500 hover:text-slate-800">
+                    <i class="fa-solid fa-bomb mr-1"></i> 模式二：五次生存
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主內容區 -->
+    <main class="max-w-7xl w-full mx-auto px-4 flex-grow grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
+
+        <!-- 左側：遊戲操作控制台 (Play Console) -->
+        <section
+            class="lg:col-span-6 bg-white border border-slate-200 rounded-2xl p-6 shadow-md flex flex-col justify-between relative overflow-hidden">
+            <!-- 裝飾背景球 -->
+            <div id="glow-bg"
+                class="absolute top-0 left-0 w-32 h-32 bg-blue-50 rounded-full blur-3xl pointer-events-none transition-all">
+            </div>
+
+            <div>
+                <div class="mb-4">
+                    <span id="mode-badge"
+                        class="px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-600 border border-blue-100">
+                        While Loop 概念: 無限嘗試
+                    </span>
+                    <h2 id="game-title" class="text-2xl font-bold mt-3 text-slate-900">體驗遊戲（秘密數字已產生）</h2>
+                    <p id="game-subtitle" class="text-sm text-slate-500 mt-1">只要還沒有猜對，此挑戰就永遠不會結束。盡情嘗試吧！</p>
+                </div>
+
+                <!-- For Loop 專屬：生命值狀態欄 -->
+                <div id="lives-container"
+                    class="hidden mb-4 bg-rose-50 border border-rose-100 rounded-xl p-4 text-center">
+                    <div class="text-xs text-rose-500 font-bold uppercase tracking-wider mb-1.5"><i
+                            class="fa-solid fa-heart-pulse"></i> 剩餘生命值 (Hearts)</div>
+                    <div id="hearts-display" class="text-2xl tracking-widest">❤️❤️❤️❤️❤️</div>
+                </div>
+
+                <!-- 遊戲控制卡片 -->
+                <div id="game-card"
+                    class="bg-slate-50 border border-slate-200 rounded-xl p-6 text-center mb-6 relative transition-all">
+                    <!-- 警告提示框 -->
+                    <div id="game-alert"
+                        class="hidden absolute inset-x-4 top-4 bg-rose-500 text-white py-2 px-3 rounded-lg text-sm font-semibold shadow-md transition-all z-10">
+                    </div>
+
+                    <div class="text-sm text-slate-600 mb-2 font-medium">請輸入你猜測的整數 (1-100)：</div>
+                    <div class="flex gap-2 max-w-xs mx-auto mb-3">
+                        <input type="number" id="player-input" min="1" max="100" placeholder="?"
+                            class="w-full bg-white border border-slate-300 rounded-lg px-4 py-2.5 text-center text-2xl font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 code-font">
+                        <button onclick="submitGuess()" id="btn-submit"
+                            class="px-6 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition-all flex items-center justify-center shadow-sm">
+                            猜！
+                        </button>
+                    </div>
+                    <div id="attempt-info" class="text-xs text-slate-500 font-medium">已猜測次數：0 次</div>
+                </div>
+
+                <!-- 即時回饋區 -->
+                <div id="feedback-box"
+                    class="bg-slate-50 border border-slate-200 rounded-xl p-5 min-h-[90px] flex flex-col justify-center items-center text-center transition-all">
+                    <div id="feedback-icon" class="text-slate-400 text-2xl mb-1">
+                        <i class="fa-solid fa-circle-question"></i>
+                    </div>
+                    <p id="feedback-text" class="text-slate-600 font-medium">輸入數字並點擊「猜！」按鈕開始</p>
+                </div>
+            </div>
+
+            <!-- 歷史紀錄 -->
+            <div class="mt-6">
+                <div class="flex justify-between items-center mb-2">
+                    <h3 class="text-sm font-semibold text-slate-700"><i class="fa-solid fa-history mr-1"></i> 猜測軌跡</h3>
+                    <button onclick="resetGame()"
+                        class="text-xs text-rose-600 hover:text-rose-700 flex items-center gap-1 font-medium transition-colors">
+                        <i class="fa-solid fa-rotate-right"></i> 重設本局數字
+                    </button>
+                </div>
+                <div id="history-list" class="space-y-2 max-h-[140px] overflow-y-auto pr-1">
+                    <p class="text-xs text-slate-400 text-center py-4">目前沒有任何紀錄</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- 右側：數值範圍即時監測儀表板 (Dashboard) -->
+        <section
+            class="lg:col-span-6 bg-white border border-slate-200 rounded-2xl p-6 shadow-md flex flex-col justify-between relative overflow-hidden">
+            <div class="absolute top-0 right-0 w-32 h-32 bg-emerald-50 rounded-full blur-3xl pointer-events-none"></div>
+
+            <div>
+                <div class="mb-6">
+                    <span
+                        class="px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-600 border border-emerald-100">
+                        數值範圍即時監控
+                    </span>
+                    <h2 class="text-2xl font-bold mt-3 text-slate-900">Possible Range 雙向收縮條</h2>
+                    <p class="text-sm text-slate-500 mt-1">觀察每次你猜錯後，電腦的大腦是如何「雙向夾擊」縮小答案空間的！</p>
+                </div>
+
+                <!-- 核心視覺收縮條 -->
+                <div class="bg-slate-50 border border-slate-200 rounded-xl p-6 mb-6">
+                    <div class="flex justify-between text-xs text-slate-400 font-bold mb-2">
+                        <span>MIN: 1</span>
+                        <span>MID: 50</span>
+                        <span>MAX: 100</span>
+                    </div>
+
+                    <!-- 軌道主體 -->
+                    <div
+                        class="h-8 w-full bg-slate-200 rounded-full overflow-hidden relative border border-slate-300 shadow-inner">
+                        <!-- 左側已被排除的灰色遮罩區 -->
+                        <div id="left-mask"
+                            class="absolute left-0 top-0 bottom-0 bg-slate-400/40 transition-all duration-300"
+                            style="width: 0%"></div>
+
+                        <!-- 右側已被排除的灰色遮罩區 -->
+                        <div id="right-mask"
+                            class="absolute right-0 top-0 bottom-0 bg-slate-400/40 transition-all duration-300"
+                            style="width: 0%"></div>
+
+                        <!-- 中央剩餘可能區間 (Highlight Track) -->
+                        <div id="active-range-bar"
+                            class="absolute top-0 bottom-0 bg-gradient-to-r from-blue-500 to-indigo-500 transition-all duration-300 shadow-md"
+                            style="left: 0%; right: 0%"></div>
+
+                        <!-- 刻度中點 -->
+                        <div class="absolute left-1/2 top-0 bottom-0 w-0.5 bg-white/40"></div>
+                    </div>
+
+                    <!-- 當前範圍數值顯示 -->
+                    <div class="flex justify-between items-center mt-4">
+                        <div class="text-center">
+                            <span class="block text-[10px] text-slate-400 font-bold uppercase">當前下限</span>
+                            <span id="label-min" class="text-2xl font-bold text-blue-600 code-font">1</span>
+                        </div>
+                        <div class="text-slate-400 text-lg font-bold">&larr; 縮減中 &rarr;</div>
+                        <div class="text-center">
+                            <span class="block text-[10px] text-slate-400 font-bold uppercase">當前上限</span>
+                            <span id="label-max" class="text-2xl font-bold text-indigo-600 code-font">100</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 課堂思考引導問題 -->
+                <div class="bg-blue-50 border border-blue-100 rounded-xl p-4">
+                    <h4 class="text-sm font-bold text-blue-800 mb-2"><i class="fa-solid fa-lightbulb"></i> 課堂思考引導：</h4>
+                    <ul class="text-xs text-slate-600 space-y-2 list-disc pl-4">
+                        <li><b>While Loop 模式</b>下：如果玩家一輩子不輸入 correct 數字，這個「重複」會停下來嗎？這種停不下來的現象在程式裡叫什麼？</li>
+                        <li><b>For Loop 模式</b>下：每一次猜錯，生命值（Hearts）就會減少 1。如果 5 次都猜錯了，程式在底部會發生什麼事？</li>
+                        <li>這兩個模式中，哪一個是由「<b>明確條件驅動</b>」？哪一個是由「<b>明確計數次數驅動</b>」？</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- 教師指引小幫手 -->
+            <div class="mt-6 bg-slate-50 border border-slate-200 p-4 rounded-xl">
+                <p class="text-xs text-slate-500 leading-relaxed">
+                    🎓 <b>教學大心法：</b>先讓學生盲玩三局！讓他們觀察 While 下的自由探索與 For 下面「炸彈即將爆炸」的緊張感。接著引導他們到黑板上嘗試設計出這兩個遊戲的流程圖（Flowchart）。
+                </p>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- 底部版權 -->
+    <footer class="max-w-7xl mx-auto px-4 mt-8 text-center text-xs text-slate-400">
+        中四 ICT 資訊科技輔助教學 &bull; 猜數字雙迴圈課前直覺體驗平台 &bull; 秘密數字完全隨機
+    </footer>
+
+    <!-- JavaScript 邏輯控制 -->
+    <script>
+        // 秘密數字（每次初始化隨機產生）
+        let secretNumber = 0;
+
+        // 遊戲狀態變數
+        let currentMode = 'while'; // 'while' 或是 'for'
+        let minBoundary = 1;
+        let maxBoundary = 100;
+        let attempts = 0;
+        const maxForAttempts = 5; // For 限制五次
+        let gameOver = false;
+
+        // 初始化一局新遊戲 (秘密數字改為完全隨機產生！)
+        function startNewGame() {
+            // 完全隨機產生 1 到 100 的答案
+            secretNumber = Math.floor(Math.random() * 100) + 1;
+
+            minBoundary = 1;
+            maxBoundary = 100;
+            attempts = 0;
+            gameOver = false;
+
+            // 重設數值條遮罩
+            updateRangeVisuals();
+
+            // 重設 UI
+            const playerInputEl = document.getElementById('player-input');
+            if (playerInputEl) {
+                playerInputEl.value = "";
+                playerInputEl.disabled = false;
+            }
+
+            const btnSubmitEl = document.getElementById('btn-submit');
+            if (btnSubmitEl) btnSubmitEl.disabled = false;
+
+            const gameCardEl = document.getElementById('game-card');
+            if (gameCardEl) {
+                gameCardEl.classList.remove('shake-effect', 'bg-rose-100', 'border-rose-300');
+            }
+
+            // 處理 For 模式的生命值顯示
+            const attemptInfoEl = document.getElementById('attempt-info');
+            const heartsDisplayEl = document.getElementById('hearts-display');
+            if (currentMode === 'for') {
+                if (heartsDisplayEl) heartsDisplayEl.textContent = "❤️❤️❤️❤️❤️";
+                if (attemptInfoEl) attemptInfoEl.textContent = `剩餘生命值：5 / 5`;
+            } else {
+                if (attemptInfoEl) attemptInfoEl.textContent = "已嘗試次數：0 次";
+            }
+
+            // 預設提示
+            const feedbackBox = document.getElementById('feedback-box');
+            if (feedbackBox) {
+                feedbackBox.className = "bg-slate-50 border border-slate-200 rounded-xl p-5 min-h-[90px] flex flex-col justify-center items-center text-center transition-all";
+            }
+
+            const feedbackIconEl = document.getElementById('feedback-icon');
+            if (feedbackIconEl) {
+                let iconClass = 'fa-circle-question text-slate-400';
+                if (currentMode === 'for') iconClass = 'fa-bomb text-rose-500 animate-pulse';
+                feedbackIconEl.innerHTML = `<i class="fa-solid ${iconClass} text-2xl mb-1"></i>`;
+            }
+
+            const feedbackTextEl = document.getElementById('feedback-text');
+            if (feedbackTextEl) {
+                let defaultText = "新的一局秘密數字已生成！猜一猜（提示：1 到 100 之間）";
+                if (currentMode === 'for') defaultText = "炸彈已重設！你有 5 次拆彈機會，猜錯扣心、猜對成功！";
+                feedbackTextEl.textContent = defaultText;
+                feedbackTextEl.className = "text-slate-600 font-medium";
+            }
+
+            const historyListEl = document.getElementById('history-list');
+            if (historyListEl) {
+                historyListEl.innerHTML = '<p class="text-xs text-slate-400 text-center py-4">目前沒有任何紀錄</p>';
+            }
+        }
+
+        // 提交玩家猜測
+        function submitGuess() {
+            if (gameOver) return;
+
+            const inputEl = document.getElementById('player-input');
+            if (!inputEl) return;
+            const guessVal = parseInt(inputEl.value);
+
+            // 驗證輸入防呆
+            if (isNaN(guessVal) || guessVal < minBoundary || guessVal > maxBoundary) {
+                showAlert(`請輸入在有效範圍 ${minBoundary} 到 ${maxBoundary} 之間的數字！`);
+                return;
+            }
+
+            attempts++;
+
+            let resultMessage = "";
+            let resultClass = "";
+            let iconHtml = "";
+
+            if (currentMode === 'while') {
+                // While Loop 邏輯 (無限挑戰模式)
+                const attemptInfoEl = document.getElementById('attempt-info');
+                if (attemptInfoEl) attemptInfoEl.textContent = `已嘗試次數：${attempts} 次`;
+
+                if (guessVal === secretNumber) {
+                    gameOver = true;
+                    resultMessage = `🎉 恭喜你！猜對了！秘密數字就是 ${secretNumber}！`;
+                    resultClass = "bg-emerald-50 border-2 border-emerald-500 text-emerald-700";
+                    iconHtml = '<i class="fa-solid fa-trophy text-emerald-600 text-3xl animate-bounce"></i>';
+
+                    inputEl.disabled = true;
+                    const btnSubmitEl = document.getElementById('btn-submit');
+                    if (btnSubmitEl) btnSubmitEl.disabled = true;
+                } else if (guessVal < secretNumber) {
+                    resultMessage = `太小了！提示：往大的方向猜。`;
+                    resultClass = "bg-blue-50 border border-blue-300 text-blue-700";
+                    iconHtml = '<i class="fa-solid fa-circle-arrow-up text-blue-500 text-2xl"></i>';
+
+                    minBoundary = Math.max(minBoundary, guessVal + 1);
+                } else {
+                    resultMessage = `太大了！提示：往小的方向猜。`;
+                    resultClass = "bg-rose-50 border border-rose-300 text-rose-700";
+                    iconHtml = '<i class="fa-solid fa-circle-arrow-down text-rose-500 text-2xl"></i>';
+
+                    maxBoundary = Math.min(maxBoundary, guessVal - 1);
+                }
+            }
+            else if (currentMode === 'for') {
+                // For Loop 邏輯 (限次生存挑戰模式)
+                const remainingLives = maxForAttempts - attempts;
+                const attemptInfoEl = document.getElementById('attempt-info');
+                if (attemptInfoEl) attemptInfoEl.textContent = `剩餘生命值：${remainingLives} / 5`;
+
+                // 更新生命值心形圖案
+                const heartsDisplayEl = document.getElementById('hearts-display');
+                if (heartsDisplayEl) heartsDisplayEl.textContent = "❤️".repeat(remainingLives) + "🖤".repeat(attempts);
+
+                if (guessVal === secretNumber) {
+                    gameOver = true;
+                    resultMessage = `🎉 成功安全拆彈！答案就是 ${secretNumber}！`;
+                    resultClass = "bg-emerald-50 border-2 border-emerald-500 text-emerald-700";
+                    iconHtml = '<i class="fa-solid fa-shield-halved text-emerald-600 text-3xl"></i>';
+
+                    inputEl.disabled = true;
+                    const btnSubmitEl = document.getElementById('btn-submit');
+                    if (btnSubmitEl) btnSubmitEl.disabled = true;
+                } else {
+                    // 猜錯了，判斷剩餘命數
+                    if (remainingLives <= 0) {
+                        gameOver = true;
+                        resultMessage = `💥 嗶嗶——砰！！！5 次機會已耗盡，炸彈引爆！正確數字是 ${secretNumber}。`;
+                        resultClass = "bg-rose-100 border-2 border-rose-500 text-rose-700";
+                        iconHtml = '<i class="fa-solid fa-burst text-rose-600 text-3xl"></i>';
+
+                        // 震動控制台卡片
+                        const gameCardEl = document.getElementById('game-card');
+                        if (gameCardEl) gameCardEl.classList.add('shake-effect', 'bg-rose-100', 'border-rose-300');
+
+                        inputEl.disabled = true;
+                        const btnSubmitEl = document.getElementById('btn-submit');
+                        if (btnSubmitEl) btnSubmitEl.disabled = true;
+                    } else {
+                        // 還沒爆炸，給予大小提示
+                        if (guessVal < secretNumber) {
+                            resultMessage = `太小了！生命值減少 1！`;
+                            resultClass = "bg-blue-50 border border-blue-300 text-blue-700";
+                            iconHtml = '<i class="fa-solid fa-heart-crack text-rose-500 text-2xl"></i>';
+
+                            minBoundary = Math.max(minBoundary, guessVal + 1);
+                        } else {
+                            resultMessage = `太大了！生命值減少 1！`;
+                            resultClass = "bg-rose-50 border border-rose-300 text-rose-700";
+                            iconHtml = '<i class="fa-solid fa-heart-crack text-rose-500 text-2xl"></i>';
+
+                            maxBoundary = Math.min(maxBoundary, guessVal - 1);
+                        }
+                    }
+                }
+            }
+
+            // 更新儀表板範圍及視覺圖案
+            updateRangeVisuals();
+
+            // 更新回饋卡片
+            const feedbackBox = document.getElementById('feedback-box');
+            if (feedbackBox) {
+                feedbackBox.className = `rounded-xl p-5 min-h-[90px] flex flex-col justify-center items-center text-center transition-all ${resultClass}`;
+            }
+            const feedbackIconEl = document.getElementById('feedback-icon');
+            if (feedbackIconEl) {
+                feedbackIconEl.innerHTML = iconHtml;
+            }
+            const feedbackTextEl = document.getElementById('feedback-text');
+            if (feedbackTextEl) {
+                feedbackTextEl.className = "font-bold text-base sm:text-lg";
+                feedbackTextEl.textContent = resultMessage;
+            }
+
+            // 新增至歷史紀錄
+            addHistoryRecord(guessVal, guessVal === secretNumber ? '答對' : guessVal < secretNumber ? '太小' : '太大');
+
+            // 聚焦並清空輸入
+            inputEl.value = "";
+            inputEl.focus();
+        }
+
+        // 更新儀表板的區間數值與視覺雙向收縮條
+        function updateRangeVisuals() {
+            // 更新文字標籤
+            const labelMin = document.getElementById('label-min');
+            const labelMax = document.getElementById('label-max');
+            if (labelMin) labelMin.textContent = minBoundary;
+            if (labelMax) labelMax.textContent = maxBoundary;
+
+            // 計算遮罩比例 (1-100 映射為 0% - 100%)
+            const leftPercent = Math.max(0, minBoundary - 1);
+            const rightPercent = Math.max(0, 100 - maxBoundary);
+
+            // 更新遮罩寬度
+            const leftMask = document.getElementById('left-mask');
+            const rightMask = document.getElementById('right-mask');
+            const activeRangeBar = document.getElementById('active-range-bar');
+
+            if (leftMask) leftMask.style.width = `${leftPercent}%`;
+            if (rightMask) rightMask.style.width = `${rightPercent}%`;
+
+            if (activeRangeBar) {
+                activeRangeBar.style.left = `${leftPercent}%`;
+                activeRangeBar.style.right = `${rightPercent}%`;
+            }
+        }
+
+        // 切換遊戲模式
+        function switchMode(mode) {
+            currentMode = mode;
+
+            const btnWhile = document.getElementById('tab-while');
+            const btnFor = document.getElementById('tab-for');
+            const glowBgEl = document.getElementById('glow-bg');
+            const modeBadgeEl = document.getElementById('mode-badge');
+            const gameTitleEl = document.getElementById('game-title');
+            const gameSubtitleEl = document.getElementById('game-subtitle');
+            const livesContainerEl = document.getElementById('lives-container');
+
+            if (mode === 'while') {
+                if (btnWhile) btnWhile.className = "px-4 py-2 rounded-lg text-sm font-bold transition-all bg-white text-blue-600 shadow-sm";
+                if (btnFor) btnFor.className = "px-4 py-2 rounded-lg text-sm font-bold transition-all text-slate-500 hover:text-slate-800";
+
+                if (glowBgEl) glowBgEl.className = "absolute top-0 left-0 w-32 h-32 bg-blue-50 rounded-full blur-3xl pointer-events-none transition-all";
+                if (modeBadgeEl) {
+                    modeBadgeEl.className = "px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-600 border border-blue-100";
+                    modeBadgeEl.textContent = "While Loop 概念: 無限嘗試";
+                }
+                if (gameTitleEl) gameTitleEl.textContent = "體驗遊戲（秘密數字已產生）";
+                if (gameSubtitleEl) gameSubtitleEl.textContent = "只要還沒有猜對，此挑戰就永遠不會結束。盡情嘗試吧！";
+                if (livesContainerEl) livesContainerEl.classList.add('hidden');
+            } else {
+                if (btnFor) btnFor.className = "px-4 py-2 rounded-lg text-sm font-bold transition-all bg-white text-rose-600 shadow-sm";
+                if (btnWhile) btnWhile.className = "px-4 py-2 rounded-lg text-sm font-bold transition-all text-slate-500 hover:text-slate-800";
+
+                if (glowBgEl) glowBgEl.className = "absolute top-0 left-0 w-32 h-32 bg-rose-50 rounded-full blur-3xl pointer-events-none transition-all";
+                if (modeBadgeEl) {
+                    modeBadgeEl.className = "px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-50 text-rose-600 border border-rose-100";
+                    modeBadgeEl.textContent = "For Loop 概念: 5次計數防線";
+                }
+                if (gameTitleEl) gameTitleEl.textContent = "計數炸彈生存戰";
+                if (gameSubtitleEl) gameSubtitleEl.textContent = "每猜錯一次，計數扣 1（Hearts 減半），數到 5 炸彈立刻引爆！";
+                if (livesContainerEl) livesContainerEl.classList.remove('hidden');
+            }
+
+            startNewGame();
+        }
+
+        // 新增互動歷史紀錄
+        function addHistoryRecord(guess, result) {
+            const list = document.getElementById('history-list');
+            if (!list) return;
+            if (attempts === 1) {
+                list.innerHTML = ""; // 清空預設的「目前沒有任何紀錄」字樣
+            }
+
+            const record = document.createElement('div');
+            record.className = "flex justify-between items-center bg-slate-50 px-3 py-2 rounded border border-slate-200 text-xs sm:text-sm shadow-sm";
+
+            let badgeColor = "text-blue-600 font-medium";
+            if (result === '答對') badgeColor = "text-emerald-600 font-bold";
+            if (result === '太大') badgeColor = "text-rose-600 font-medium";
+
+            record.innerHTML = `
+                <span class="text-slate-600">第 ${attempts} 次猜：<strong class="text-slate-900 code-font">${guess}</strong></span>
+                <span class="text-xs ${badgeColor}">${result}</span>
+            `;
+            list.prepend(record); // 置頂最新的紀錄
+        }
+
+        // 警告提示框控制
+        function showAlert(msg) {
+            const alertEl = document.getElementById('game-alert');
+            if (alertEl) {
+                alertEl.textContent = msg;
+                alertEl.classList.remove('hidden');
+                setTimeout(() => {
+                    alertEl.classList.add('hidden');
+                }, 3000);
+            }
+        }
+
+        // 重新開始
+        function resetGame() {
+            startNewGame();
+        }
+
+        // 監聽鍵盤 Enter 鍵，方便流暢提交
+        document.addEventListener('keypress', function (e) {
+            const playerInputEl = document.getElementById('player-input');
+            if (e.key === 'Enter' && playerInputEl && document.activeElement === playerInputEl) {
+                submitGuess();
+            }
+        });
+
+        // 預設初始化
+        startNewGame();
+    </script>
+</body>
+
+</html>
